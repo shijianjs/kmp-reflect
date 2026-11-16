@@ -248,6 +248,9 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 `rgba(110,168,254,0.12)` 与 `.detail .member` 文本均与改写前一致，9 行表格、7 个 `.output` 列表都在。
 `:demo:e2eTest` 6 个用例、18 项断言全绿（Playwright 的 CSS 选择器穿透 open shadow root，原有选择器契约
 不需要改）；`:demo:detekt` 0 findings；`./gradlew build` 通过。中英首屏与选中态截图核对，无 console error。
+上线后：Pages run `43917615626`（push `074c02c`）与 CI run `43917633208` 均成功；线上
+`https://shijianjs.github.io/kmp-reflect/demo/` 复测 `document.adoptedStyleSheets` 为 0、九个组件的 shadow
+root 各自 2–4 份 sheet、`[style]` 只有 `BODY`、9 行表格、`h1.title` 正常、无 console error。
 
 ## 明确不做
 
