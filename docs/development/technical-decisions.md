@@ -39,7 +39,7 @@
 - 元数据按类生成，聚合由一个「模块对象」完成：`kmp.reflect.registry=<包名>:<对象名>` 选项开启，
   生成 `object <对象名> : KmpReflectModule`，内含 `classes` 与 `resources`。
 - 不做自动注册（没有 `init` 钩子可依赖，JVM 的 `ServiceLoader` 只在 JVM 上存在）。
-  使用方显式 `KmpClasses.register(DemoReflection)` 一次；`KmpClasses.of<T>()` 依赖这份注册。
+  使用方显式 `KmpReflection.register(DemoReflection)` 一次；`KmpClasses.of<T>()` 依赖这份注册。
 - 扫描（类扫描、注解扫描）只在已注册的模块范围内进行，这正是「只有标记了反射的类才支持扫描」的实现方式。
 
 ## 6. 动态代理
