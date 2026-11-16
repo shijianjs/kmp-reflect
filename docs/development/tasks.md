@@ -224,7 +224,9 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 `rgb(110,168,254)`；选中行背景 `rgba(110,168,254,0.12)`、徽标 `rgba(74,222,128,0.12)`；`td` padding
 `9px 12px`、`th` 字重 `600`、`h2` 19px、`.section-hint` 的 `margin-bottom` 14px（`.hint` 与
 `.section-hint` 同特异性靠后声明覆盖的顺序假设成立）；中英首屏与选中态截图核对，无 console error、
-无失败请求。
+无失败请求。上线后 CI run `43901635441`（四个 job）与 Pages run `43901620856` 全绿；线上
+`/demo/` 实测 `[style]` 只有 `BODY`、6 份 adopted sheet、`<table class="class-table">` /
+`<th class="cell cell-head">`、9 行、按钮 `rgb(154,163,175)`、点行后 `.detail .member` 正常、无 console error。
 
 ## 明确不做
 
