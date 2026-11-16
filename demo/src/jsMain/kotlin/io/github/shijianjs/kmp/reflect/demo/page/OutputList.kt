@@ -17,7 +17,7 @@ import web.html.HtmlTagName
  */
 internal class OutputList {
     val element: HTMLElement = HtmlTagName.ul.createElement {
-        addClass("output")
+        classList.add(OUTPUT_CLASS)
         inlineStyle.apply {
             margin = Margin(0.px, 0.px)
             padding = Padding(0.px, 0.px, 0.px, 18.px)

@@ -31,7 +31,7 @@ internal class ResourcesSection {
     val root: HTMLElement = shell.root
 
     private val list = HtmlTagName.ul.createElement {
-        addClass("output")
+        classList.add(OUTPUT_CLASS)
         inlineStyle.apply {
             margin = Margin(0.px, 0.px)
             padding = Padding(0.px, 0.px, 0.px, 18.px)
@@ -65,7 +65,7 @@ internal class ResourcesSection {
             inlineStyle.fontFamily = codeFamily
         }
         val item = HtmlTagName.li.createElement {
-            addClass("resource")
+            classList.add(RESOURCE_CLASS)
             inlineStyle.marginBottom = 6.px
             appendChild(label)
             if (resource.mimeType.startsWith("image/")) {
@@ -73,7 +73,7 @@ internal class ResourcesSection {
             } else {
                 appendChild(
                     HtmlTagName.p.createElement {
-                        addClass("preview")
+                        classList.add(PREVIEW_CLASS)
                         inlineStyle.apply {
                             margin = Margin(4.px, 0.px, 0.px)
                             color = mutedText
@@ -90,7 +90,7 @@ internal class ResourcesSection {
 
     private fun imageFor(resource: KmpResource): HTMLImageElement =
         HtmlTagName.img.createElement {
-            addClass("thumb")
+            classList.add(THUMB_CLASS)
             alt = resource.fileName
             src = "data:${resource.mimeType};base64,${Base64.encode(resource.bytes)}"
             inlineStyle.apply {

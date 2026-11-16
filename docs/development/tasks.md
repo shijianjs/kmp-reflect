@@ -195,6 +195,11 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 `push`，只能整体赋值 `arrayOf(*document.adoptedStyleSheets, PAGE_SHEET)`；`Color` / `FontFamily` 都没有
 字符串工厂，调色板改用 `rgb(...)`，字体只能取 `FontFamily.systemUi` / `FontFamily.monospace` 这类常量，
 原 CSS 里的自定义字体栈因此丢失（用系统字体替代，视觉上等价）。
+同类修正（同一轮后补）：所有 class 标记收进 `Theme.kt` 的 `X_CLASS: ClassName` 常量、调用点直接
+`classList.add(X_CLASS)`，删掉把字符串透传一层的 `addClass(String)`（`classList.add` 只吃 `ClassName`，
+包一层等于放弃检查）；语言切换按钮原本用 UA 的 `buttontext` 黑色，深色底上看不见，改为在 `PAGE_SHEET`
+里给 `color` / `backgroundColor` / `borderColor` 基础值（连同 hover 一起留在 sheet，避免内联压过
+`:hover`）。实测按钮常态 `rgb(154,163,175)`、hover 边框与文字都变 `rgb(110,168,254)`。
 
 ## 明确不做
 

@@ -80,7 +80,7 @@ internal class ClassBrowser {
     private val detailBody: HTMLDivElement = HtmlTagName.div.createElement()
 
     private val detailPanel: HTMLDivElement = HtmlTagName.div.createElement {
-        addClass("detail")
+        classList.add(DETAIL_CLASS)
         inlineStyle.apply {
             marginTop = 14.px
             padding = Padding(14.px, 16.px)
@@ -162,7 +162,7 @@ internal class ClassBrowser {
         if (kmpClass == null) {
             detailBody.replaceChildren(
                 HtmlTagName.p.createElement {
-                    addClass("hint")
+                    classList.add(HINT_CLASS)
                     inlineStyle.color = mutedText
                     textContent = copy.detailEmpty
                 },
@@ -171,7 +171,7 @@ internal class ClassBrowser {
         }
 
         val list = HtmlTagName.ul.createElement {
-            addClass("member")
+            classList.add(MEMBER_CLASS)
             inlineStyle.apply {
                 margin = Margin(0.px, 0.px)
                 paddingLeft = 18.px
@@ -204,7 +204,7 @@ internal class ClassBrowser {
 
     private fun memberLine(label: String, invokable: Boolean): HTMLElement =
         HtmlTagName.li.createElement {
-            addClass("member")
+            classList.add(MEMBER_CLASS)
             inlineStyle.apply {
                 fontFamily = codeFamily
                 marginBottom = 2.px

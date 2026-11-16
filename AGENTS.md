@@ -66,6 +66,11 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 - 样式内联（`inlineStyle` + `rgb(...)`），只有内联表达不了的规则（`:hover`、`box-sizing` reset）放在
   `Theme.kt` 的 `PAGE_SHEET`，由 `installPageStyle()` 挂到 `document.adoptedStyleSheets`。**不要**再
   新增 `demo.css` 之类的集中式样式表。
+- 每个 class 标记都是 `Theme.kt` 里的一条 `internal val X_CLASS: ClassName`，调用点写
+  `classList.add(X_CLASS)`。**不要**加 `addClass("row")` 这类把字符串透传一层的包装（`classList.add`
+  本来就只吃 `ClassName`，包一层反而让拼错的类名照样编译）。
+- 会随 `:hover` 变的属性（背景、边框色、文字色）一律留在 `PAGE_SHEET`，不能内联，否则内联优先级会盖掉
+  hover 规则。`<button>` 这类 UA 自带 `buttontext` 颜色的控件必须显式给 `color`，否则在深色底上看不见。
 - 文档站点的“全功能”配置是一套，别砍：`docs/build.gradle.kts` 的 `kitBundle` / `extractKitBundle` /
   `clientModuleFunction` / `browserBundle(-Files)`、`docs/.../docs/ClientModule.kt`、
   `Config.kt` 里的 `clientModules` / `themes` / `markdown.mermaid` / `themeConfig.mermaid`。首页是

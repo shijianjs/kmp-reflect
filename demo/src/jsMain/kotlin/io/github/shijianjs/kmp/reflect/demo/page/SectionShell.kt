@@ -31,7 +31,7 @@ internal class SectionShell {
     }
 
     private val hintElement: HTMLParagraphElement = HtmlTagName.p.createElement {
-        addClass("hint")
+        classList.add(HINT_CLASS)
         inlineStyle.apply {
             margin = Margin(0.px, 0.px, 14.px)
             color = mutedText

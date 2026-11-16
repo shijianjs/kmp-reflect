@@ -33,7 +33,7 @@ import web.html.HtmlTagName
  */
 internal class HeaderBar(private val onSwitch: () -> Unit) {
     private val titleElement: HTMLHeadingElement = HtmlTagName.h1.createElement {
-        addClass("title")
+        classList.add(TITLE_CLASS)
         inlineStyle.apply {
             margin = Margin(0.px, 0.px)
             fontSize = 30.px
@@ -42,7 +42,7 @@ internal class HeaderBar(private val onSwitch: () -> Unit) {
     }
 
     private val subtitleElement: HTMLParagraphElement = HtmlTagName.p.createElement {
-        addClass("subtitle")
+        classList.add(SUBTITLE_CLASS)
         inlineStyle.apply {
             margin = Margin(6.px, 0.px, 0.px)
             color = mutedText
@@ -56,13 +56,11 @@ internal class HeaderBar(private val onSwitch: () -> Unit) {
         classList.add(LANG_CLASS)
         type = ButtonType.button
         inlineStyle.apply {
-            // The border colour and text colour change on hover, so those stay in PAGE_SHEET;
-            // everything else is inline.
+            // Border colour, text colour and the background they sit on change on hover, so all three
+            // live in PAGE_SHEET; everything else is inline.
             padding = Padding(6.px, 14.px)
-            backgroundColor = panel
             borderWidth = 1.px
             borderStyle = LineStyle.solid
-            borderColor = hairline
             borderRadius = 999.px
             fontSize = 12.px
             fontWeight = FontWeight.bold
@@ -77,7 +75,7 @@ internal class HeaderBar(private val onSwitch: () -> Unit) {
     }
 
     val root: HTMLElement = HtmlTagName.div.createElement {
-        addClass("header")
+        classList.add(HEADER_CLASS)
         inlineStyle.apply {
             display = Display.flex
             alignItems = AlignItems.flexStart

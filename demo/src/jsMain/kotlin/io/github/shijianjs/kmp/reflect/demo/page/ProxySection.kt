@@ -23,7 +23,7 @@ internal class ProxySection {
     val root: HTMLElement = shell.root
 
     private val output = HtmlTagName.p.createElement {
-        addClass("output")
+        classList.add(OUTPUT_CLASS)
         inlineStyle.apply {
             margin = Margin(0.px, 0.px)
             fontSize = 13.px

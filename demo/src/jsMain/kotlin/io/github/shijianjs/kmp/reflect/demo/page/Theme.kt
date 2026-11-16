@@ -9,7 +9,6 @@ import web.cssom.ClassName
 import web.cssom.Color
 import web.cssom.rgb
 import web.dom.document
-import web.html.HTMLElement
 
 /**
  * The demo's palette, as typed colours.
@@ -46,18 +45,41 @@ internal val SELECTED_CLASS: ClassName = ClassName("is-selected")
 
 internal val LANG_CLASS: ClassName = ClassName("lang-switch")
 
-/** Adds one class token, keeping the typed `ClassName` where the call site already has a constant. */
-internal fun HTMLElement.addClass(name: String) {
-    classList.add(ClassName(name))
-}
+/**
+ * The other class tokens the page puts on nodes.
+ *
+ * They live here for the same reason the colours do: [PAGE_SHEET] has to name them, and the
+ * components that mark their nodes have to name them. A plain string at either end would silently
+ * drift from the other, so every token is one typed constant used by both sides.
+ */
+internal val HEADER_CLASS: ClassName = ClassName("header")
+
+internal val TITLE_CLASS: ClassName = ClassName("title")
+
+internal val SUBTITLE_CLASS: ClassName = ClassName("subtitle")
+
+internal val HINT_CLASS: ClassName = ClassName("hint")
+
+internal val DETAIL_CLASS: ClassName = ClassName("detail")
+
+internal val MEMBER_CLASS: ClassName = ClassName("member")
+
+internal val OUTPUT_CLASS: ClassName = ClassName("output")
+
+internal val RESOURCE_CLASS: ClassName = ClassName("resource")
+
+internal val PREVIEW_CLASS: ClassName = ClassName("preview")
+
+internal val THUMB_CLASS: ClassName = ClassName("thumb")
 
 /**
  * The one stylesheet the page adopts on the document.
  *
  * Only what an inline declaration cannot say lives here: `:hover` on the two interactive kinds of
- * node (an inline background would win over the hover rule, so both stay in the sheet), and the
- * `box-sizing` reset, which the page needs before any component styles a padded box. Everything else
- * is inline, next to the node that owns it.
+ * node (an inline background would win over the hover rule, so both stay in the sheet), the base
+ * text colour of the language button (its `:hover` colour is set here too, and an inline colour
+ * would shadow it), and the `box-sizing` reset the page needs before any component styles a padded
+ * box. Everything else is inline, next to the node that owns it.
  */
 internal val PAGE_SHEET: CSSStyleSheet = cssSheet {
     "*" { boxSizing = BoxSizing.borderBox }
@@ -66,9 +88,18 @@ internal val PAGE_SHEET: CSSStyleSheet = cssSheet {
         Pseudos.hover { backgroundColor = panelStrong }
     }
 
+    // CSS has no typed way to join two `ClassName`s, so the compound selector is spelled once here,
+    // next to the two tokens it is made of — nowhere else in the page knows it.
     ".row.is-selected" { backgroundColor = selectedFill }
 
     LANG_CLASS {
+        // A `<button>` starts with the UA's own `buttontext` colour, which is unreadable on this
+        // background; the sheet, not an inline declaration, so `:hover` can still override it. The
+        // background and border colour are here for the same reason — inline would win over `:hover`.
+        color = mutedText
+        backgroundColor = panel
+        borderColor = hairline
+
         Pseudos.hover {
             borderColor = accent
             color = accent
