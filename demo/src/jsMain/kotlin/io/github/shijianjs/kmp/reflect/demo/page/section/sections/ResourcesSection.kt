@@ -5,12 +5,11 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SECTION_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SectionShell
+import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
 import io.github.shijianjs.kmp.reflect.demo.page.theme.CODE_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_ITEM_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.PREVIEW_CLASS
@@ -41,32 +40,32 @@ import web.html.HtmlTagName
  * `<kmp-resources>`: the resources the processor read from `demo/data` at compile time.
  *
  * Everything about a resource — path, MIME type, byte count — comes from the metadata; the language
- * only supplies the word for "bytes", so [applyCopy] rewrites the label of nodes that keep their
+ * only supplies the word for "bytes", so [applyTranslation] rewrites the label of nodes that keep their
  * images and previews.
  */
 @OptIn(ExperimentalEncodingApi::class)
 internal class ResourcesSection : CustomElementAdapter() {
-    private val shell = SectionShell()
+    private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
 
     private val entries: List<Entry>
 
     init {
-        val shadow = attachStyledShadow(RESET, SECTION_SHEET, OUTPUT_SHEET, RESOURCES_SHEET)
-        shell.nodes.forEach { node -> shadow.appendChild(node) }
-        shell.body.appendChild(list.element)
+        val shadow = attachStyledShadow(RESET, OUTPUT_SHEET, RESOURCES_SHEET)
+        shadow.appendChild(shell)
+        shell.appendChild(list.element)
 
         entries = KmpResources.all().sortedBy { resource -> resource.path }.map(::entryOf)
         entries.forEach { entry -> list.element.appendChild(entry.item) }
-        applyCopy(english)
+        applyTranslation(english)
     }
 
-    fun applyCopy(copy: Copy) {
-        shell.setCopy(copy.resourcesHeading, copy.resourcesHint)
+    fun applyTranslation(translation: Translation) {
+        shell.setText(translation.resourcesHeading, translation.resourcesHint)
         entries.forEach { entry ->
             entry.label.textContent =
-                "${entry.resource.path} — ${entry.resource.mimeType}, ${entry.resource.size} ${copy.resourceBytes}"
+                "${entry.resource.path} — ${entry.resource.mimeType}, ${entry.resource.size} ${translation.resourceBytes}"
         }
     }
 

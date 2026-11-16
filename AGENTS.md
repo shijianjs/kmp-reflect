@@ -60,11 +60,16 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 
 - demo 页面是一组标准自定义元素，每个组件一个文件、一个 shadow root：`page/DemoPage.kt`（
   `<kmp-demo-page>`，只做组合与语言状态）、`page/header/HeaderBar.kt`（`<kmp-demo-header>`）、
-  `page/section/SectionShell.kt` + `page/section/OutputList.kt`（八个区块共用的外壳与正文列表）、
-  `page/section/sections/*.kt`（`<kmp-classes>`、`<kmp-invocation>` … 各区块）。目录层级就是归属：
-  `page/` 放整页与其词汇（`theme/` 调色板与 class 常量、`lang/` 文案），`page/section/` 放一对多里的
-  「一」，`page/section/sections/` 放「多」。**不要**把区块文件平铺回 `page/`，也**不要**给 SectionShell
-  做成基类——它是被组合进去的部件，不是八个区块的父类（基类会把通用刷新重新引进来）。
+  `page/section/SectionShell.kt` + `page/section/OutputList.kt`（前者是 `<kmp-section>` 这个框架组件，
+  后者是多数区块正文用的列表）、`page/section/sections/*.kt`（`<kmp-classes>`、`<kmp-invocation>` …
+  各区块）。目录层级就是归属：`page/` 放整页与其词汇（`theme/` 调色板与 class 常量、`lang/` 翻译文案），
+  `page/section/` 放一对多里的「一」，`page/section/sections/` 放「多」。**不要**把区块文件平铺回
+  `page/`，也**不要**给 SectionShell 做成基类——它是被组合进去的部件，不是八个区块的父类。
+- **区块的框架与正文分开**：`<kmp-section>`（`SectionShell`）自己是一个组件，shadow root 里是
+  `h2` + `p` + `<slot>`，`:host` 承担 36px 的区块间距；区块把正文节点 append 到 `<kmp-section>` 上，
+  经 slot 显示，所以正文仍在**区块自己的 shadow 树**里、由区块的 sheet 上色，不会跑到外壳的树里。
+  每个区块只 adopt 自己的 sheet（`RESET` + 自身/`OUTPUT_SHEET`），不再共用一份 `SECTION_SHEET`；
+  文案类方法统一叫 `applyTranslation(translation)`，`Copy` 这个名字容易和「复制」混淆，别改回去。
 - 组件一律 `CustomElementAdapter` 子类：`init` 里 `attachStyledShadow(RESET, 自己的 sheet …)` 建树，节点用
   `TagName<T>.createElement { }` 建、用字段持有；状态变化只改相关节点（`applyCopy` / `toggleSelection`），
   **不要**引入 `render()` 式整页重绘。`Main.kt` 先注册元数据，再按「子元素在前、`kmp-demo-page` 最后」

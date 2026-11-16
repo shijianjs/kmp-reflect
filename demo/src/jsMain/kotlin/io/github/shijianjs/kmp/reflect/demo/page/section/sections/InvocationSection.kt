@@ -1,17 +1,17 @@
 package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 
+import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Person
-import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SECTION_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SectionShell
+import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
 import web.components.CustomElementReference
 import web.dom.TagName
@@ -20,10 +20,10 @@ import web.dom.TagName
  * `<kmp-invocation>`: constructs a `Person` and calls its members through the metadata, once.
  *
  * The values are fixed by the time the section is built; only their labels depend on the language, so
- * [applyCopy] rewrites the lines instead of repeating the reflective calls.
+ * [applyTranslation] rewrites the lines instead of repeating the reflective calls.
  */
 internal class InvocationSection : CustomElementAdapter() {
-    private val shell = SectionShell()
+    private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
 
@@ -33,9 +33,9 @@ internal class InvocationSection : CustomElementAdapter() {
     private val ageAfterBirthday: String?
 
     init {
-        val shadow = attachStyledShadow(RESET, SECTION_SHEET, OUTPUT_SHEET)
-        shell.nodes.forEach { node -> shadow.appendChild(node) }
-        shell.body.appendChild(list.element)
+        val shadow = attachStyledShadow(RESET, OUTPUT_SHEET)
+        shadow.appendChild(shell)
+        shell.appendChild(list.element)
 
         val personClass: KmpClass? =
             KmpClasses.byNameOrNull("io.github.shijianjs.kmp.reflect.demo.model.Person")
@@ -51,16 +51,16 @@ internal class InvocationSection : CustomElementAdapter() {
             // `age` is read back through its getter: the call above went through `birthday`.
             ageAfterBirthday = "${personClass.property("age")?.get(person)} (birthday -> $birthday)"
         }
-        applyCopy(english)
+        applyTranslation(english)
     }
 
-    fun applyCopy(copy: Copy) {
-        shell.setCopy(copy.invocationHeading, copy.invocationHint)
+    fun applyTranslation(translation: Translation) {
+        shell.setText(translation.invocationHeading, translation.invocationHint)
         list.setLines(
             listOfNotNull(
-                constructed?.let { value -> "${copy.constructed}: $value" } ?: copy.detailEmpty,
-                greetResult?.let { value -> "${copy.called}: $value" },
-                ageAfterBirthday?.let { value -> "${copy.propertyValue} age: $value" },
+                constructed?.let { value -> "${translation.constructed}: $value" } ?: translation.detailEmpty,
+                greetResult?.let { value -> "${translation.called}: $value" },
+                ageAfterBirthday?.let { value -> "${translation.propertyValue} age: $value" },
             ),
         )
     }

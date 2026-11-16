@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 86 |
-| 已完成 | 85 |
+| 总计 | 87 |
+| 已完成 | 86 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -214,6 +214,21 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 （`h1.title`、`tr.row`、`.detail .member`、`.output`、`img.thumb`、`.lang-switch`、`.page` 与新页面对得上，
 `fun greet(` / `val greeting` / `Hello, Ada!` / `proxy(greet) -> world` / `name=person` / `config.json`
 逐项命中）；`./gradlew build` 通过（含 detekt）。
+### N. 区块外壳做成真正的容器 + 文案类改叫 Translation（1，2026-11-17 追加）
+
+87 86 的 `SectionShell` 只是把 `h2` / `hint` / 空 `div` 三个节点交给区块自己塞进 shadow root，区块的
+盒子其实还是区块宿主本身——看着不像「Card 装着内容」。改成 `<kmp-section>` 组件：自己的 shadow root 里
+是 `h2` + `p` + `<slot>`，`:host` 承担 36px 区块间距；区块把正文 append 到 `<kmp-section>` 上、经 slot 显示，
+正文因此仍在区块自己的 shadow 树里、由区块的 sheet 上色（没有跨树失效）。区块不再 adopt 共享的
+`SECTION_SHEET`（那份跟着外壳走，改名 `SHELL_SHEET`，只有外壳自己 adopt），只留 `RESET` + 自己的 sheet。
+同时把 `Copy` 这个容易和「复制」混淆的名字改成 `Translation`：`lang/Translation.kt`、`english` / `chinese` /
+`translationOf(lang)`、各处 `applyTranslation(translation)`，外壳的 `setCopy` 改成 `setText`
+
+验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution`、`:demo:e2eTest`（6 用例 / 18 断言）、
+`:demo:detekt`（0 findings）、`./gradlew build` 均通过。产物实测：每个区块的 shadow root 里都有一个
+`<kmp-section>`，外壳 shadow 是 `h2` + `p` + `slot` 三段、adopt 2 份 sheet；`<table class="class-table">`
+位于外壳的 light DOM（`slot` 之前），`td` padding `9px 12px`、`th` 字重 600、`h2` 19px、外壳 margin-top 36px、
+9 行表格、7 个 `.output`、`document.adoptedStyleSheets` 仍为 0、`[style]` 只有 `BODY`，中英截图正常、无报错。
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid
@@ -239,8 +254,7 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 无失败请求。上线后 CI run `43901635441`（四个 job）与 Pages run `43901620856` 全绿；线上
 `/demo/` 实测 `[style]` 只有 `BODY`、6 份 adopted sheet、`<table class="class-table">` /
 `<th class="cell cell-head">`、9 行、按钮 `rgb(154,163,175)`、点行后 `.detail .member` 正常、无 console error。
-86 的验证：修正前的产物里 `<kmp-demo-page>` 只被 define、没有 shadow root，浏览器抛
-`Failed to construct 'HTMLElement': Please use the 'new' operator`；补 `target = "es2015"` 后同一探针显示
+86 的验证：修正前的产物里 `<kmp-demo-page>` 只被 define、没有 shadow root，浏览器抛`Failed to construct 'HTMLElement': Please use the 'new' operator`；补 `target = "es2015"` 后同一探针显示
 `created.shadow = true`、`hostIsUpgraded = true`。生产产物实测：`document.adoptedStyleSheets.length = 0`，
 每个组件各自的 shadow root 分别 adopt 2/3/4 份 sheet（`kmp-demo-header` 2 份、`kmp-classes` 3 份共 14 条
 规则、`kmp-resources` 4 份），全页仍只有 `BODY` 一个 `style` 属性；`td` padding `9px 12px`、`th` 字重 600、

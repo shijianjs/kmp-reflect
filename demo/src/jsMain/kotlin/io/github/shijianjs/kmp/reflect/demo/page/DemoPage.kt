@@ -6,9 +6,9 @@ import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.demo.page.header.headerBarTag
-import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Lang
-import io.github.shijianjs.kmp.reflect.demo.page.lang.copyOf
+import io.github.shijianjs.kmp.reflect.demo.page.lang.translationOf
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.annotationSectionTag
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.enumSectionTag
@@ -36,7 +36,7 @@ import web.dom.TagName
  * `<kmp-demo-page>`: one header, eight sections, and the language switch that re-labels them in place.
  *
  * Every section is its own custom element with its own shadow root and its own sheet; this element
- * only composes them, owns the current language, and walks the sections with `applyCopy` when it
+ * only composes them, owns the current language, and walks the sections with `applyTranslation` when it
  * changes. No node is recreated and no metadata is re-read on a switch.
  */
 internal class DemoPage : CustomElementAdapter() {
@@ -80,24 +80,24 @@ internal class DemoPage : CustomElementAdapter() {
     }
 
     override fun connectedCallback() {
-        applyCopy(copyOf(currentLang))
+        applyTranslation(translationOf(currentLang))
     }
 
     private fun toggleLanguage() {
         currentLang = if (currentLang == Lang.EN) Lang.ZH else Lang.EN
-        applyCopy(copyOf(currentLang))
+        applyTranslation(translationOf(currentLang))
     }
 
-    private fun applyCopy(copy: Copy) {
-        header.applyCopy(copy)
-        browser.applyCopy(copy)
-        invocation.applyCopy(copy)
-        proxy.applyCopy(copy)
-        resources.applyCopy(copy)
-        annotations.applyCopy(copy)
-        enums.applyCopy(copy)
-        nested.applyCopy(copy)
-        limitations.applyCopy(copy)
+    private fun applyTranslation(translation: Translation) {
+        header.applyTranslation(translation)
+        browser.applyTranslation(translation)
+        invocation.applyTranslation(translation)
+        proxy.applyTranslation(translation)
+        resources.applyTranslation(translation)
+        annotations.applyTranslation(translation)
+        enums.applyTranslation(translation)
+        nested.applyTranslation(translation)
+        limitations.applyTranslation(translation)
     }
 
     companion object : CustomElementReference<DemoPage>(DemoPage::class.js) {

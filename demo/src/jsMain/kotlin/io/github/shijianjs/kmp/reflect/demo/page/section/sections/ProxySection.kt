@@ -1,16 +1,16 @@
 package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 
+import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Greeter
-import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SECTION_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SectionShell
+import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
 import io.github.shijianjs.kmp.reflect.proxy.KmpInvocationHandler
 import web.components.CustomElementReference
@@ -24,16 +24,16 @@ import web.dom.TagName
  * section needs no rules of its own.
  */
 internal class ProxySection : CustomElementAdapter() {
-    private val shell = SectionShell()
+    private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
 
     private val proxyAnswer: String?
 
     init {
-        val shadow = attachStyledShadow(RESET, SECTION_SHEET, OUTPUT_SHEET)
-        shell.nodes.forEach { node -> shadow.appendChild(node) }
-        shell.body.appendChild(list.element)
+        val shadow = attachStyledShadow(RESET, OUTPUT_SHEET)
+        shadow.appendChild(shell)
+        shell.appendChild(list.element)
 
         val greeterClass = KmpClasses.byNameOrNull("io.github.shijianjs.kmp.reflect.demo.model.Greeter")
         proxyAnswer = if (greeterClass == null) {
@@ -47,12 +47,12 @@ internal class ProxySection : CustomElementAdapter() {
             val greeter = greeterClass.newProxy(handler) as Greeter
             greeter.greet("world")
         }
-        applyCopy(english)
+        applyTranslation(english)
     }
 
-    fun applyCopy(copy: Copy) {
-        shell.setCopy(copy.proxyHeading, copy.proxyHint)
-        list.setLines(listOf(proxyAnswer?.let { answer -> "${copy.proxyResult}: $answer" } ?: copy.detailEmpty))
+    fun applyTranslation(translation: Translation) {
+        shell.setText(translation.proxyHeading, translation.proxyHint)
+        list.setLines(listOf(proxyAnswer?.let { answer -> "${translation.proxyResult}: $answer" } ?: translation.detailEmpty))
     }
 
     companion object : CustomElementReference<ProxySection>(ProxySection::class.js) {

@@ -9,10 +9,9 @@ import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
-import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
-import io.github.shijianjs.kmp.reflect.demo.page.section.SECTION_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.SectionShell
+import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
 import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_MUTED_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_OK_CLASS
@@ -82,7 +81,7 @@ private class ClassRow(
  * so they cannot reach any other component.
  */
 internal class ClassBrowser : CustomElementAdapter() {
-    private val shell = SectionShell()
+    private val shell = sectionShellTag().createElement()
 
     private val headRow: HTMLTableRowElement = HtmlTagName.tr.createElement()
 
@@ -108,13 +107,13 @@ internal class ClassBrowser : CustomElementAdapter() {
         appendChild(detailBody)
     }
 
-    private var copy: Copy = english
+    private var translation: Translation = english
 
     private var selected: String? = null
 
     init {
-        val shadow = attachStyledShadow(RESET, SECTION_SHEET, BROWSER_SHEET)
-        shell.nodes.forEach { node -> shadow.appendChild(node) }
+        val shadow = attachStyledShadow(RESET, BROWSER_SHEET)
+        shadow.appendChild(shell)
 
         KmpClasses.all().forEach { kmpClass ->
             val members = cell()
@@ -131,30 +130,30 @@ internal class ClassBrowser : CustomElementAdapter() {
             bodyRows.appendChild(row)
         }
 
-        shell.body.appendChild(table)
-        shell.body.appendChild(detailPanel)
-        applyCopy(english)
+        shell.appendChild(table)
+        shell.appendChild(detailPanel)
+        applyTranslation(english)
     }
 
     /** Heading, hint, column labels and the language-dependent cell text. */
-    fun applyCopy(copy: Copy) {
-        this.copy = copy
-        shell.setCopy(copy.classesHeading, copy.classesHint)
+    fun applyTranslation(translation: Translation) {
+        this.translation = translation
+        shell.setText(translation.classesHeading, translation.classesHint)
         headRow.replaceChildren(
-            headerCell(copy.columnName),
-            headerCell(copy.columnKind),
-            headerCell(copy.columnMembers),
-            headerCell(copy.columnAnnotations),
+            headerCell(translation.columnName),
+            headerCell(translation.columnKind),
+            headerCell(translation.columnMembers),
+            headerCell(translation.columnAnnotations),
         )
         rows.forEach { row ->
-            row.membersCell.textContent = copy.membersSummary(
+            row.membersCell.textContent = translation.membersSummary(
                 row.kmpClass.constructors.size,
                 row.kmpClass.functions.size,
                 row.kmpClass.properties.size,
             )
             row.annotationsCell.textContent = row.kmpClass.annotations
                 .joinToString { annotation -> annotation.type.simpleName }
-                .ifEmpty { copy.noAnnotation }
+                .ifEmpty { translation.noAnnotation }
         }
         rebuildDetail()
     }
@@ -173,14 +172,14 @@ internal class ClassBrowser : CustomElementAdapter() {
 
     /** Local collection rebuild: the panel is one node, and the selection is what changes it. */
     private fun rebuildDetail() {
-        heading.textContent = copy.detailHeading
+        heading.textContent = translation.detailHeading
         val kmpClass = selected?.let { name -> KmpClasses.byNameOrNull(name) }
         if (kmpClass == null) {
             detailBody.replaceChildren(
                 HtmlTagName.p.createElement {
                     classList.add(HINT_CLASS)
                     classList.add(DETAIL_HINT_CLASS)
-                    textContent = copy.detailEmpty
+                    textContent = translation.detailEmpty
                 },
             )
             return
@@ -226,7 +225,7 @@ internal class ClassBrowser : CustomElementAdapter() {
                     classList.add(BADGE_CLASS)
                     // Two states, two classes: the colour is static, so nothing here is inline.
                     classList.add(if (invokable) BADGE_OK_CLASS else BADGE_MUTED_CLASS)
-                    textContent = if (invokable) copy.invokable else copy.notInvokable
+                    textContent = if (invokable) translation.invokable else translation.notInvokable
                 },
             )
         }

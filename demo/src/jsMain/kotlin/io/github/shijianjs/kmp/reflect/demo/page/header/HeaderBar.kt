@@ -7,7 +7,7 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
-import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.theme.LANG_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
 import io.github.shijianjs.kmp.reflect.demo.page.theme.SUBTITLE_CLASS
@@ -48,8 +48,8 @@ import web.html.button
  * `<kmp-demo-header>`: the title, one line of description and the language button.
  *
  * The element renders itself into its shadow root; the page only hands it a click callback and asks
- * it to apply the current language's copy. The button's label says which language it switches *to*,
- * which is why it is one of the nodes [applyCopy] rewrites.
+ * it to apply the current language's translation. The button's label says which language it switches *to*,
+ * which is why it is one of the nodes [applyTranslation] rewrites.
  */
 internal class HeaderBar : CustomElementAdapter() {
     /** What a click on the language button means to the page; the component does not know the page. */
@@ -82,10 +82,10 @@ internal class HeaderBar : CustomElementAdapter() {
         shadow.appendChild(switchButton)
     }
 
-    fun applyCopy(copy: Copy) {
-        titleElement.textContent = copy.title
-        subtitleElement.textContent = copy.subtitle
-        switchButton.textContent = copy.switchLabel
+    fun applyTranslation(translation: Translation) {
+        titleElement.textContent = translation.title
+        subtitleElement.textContent = translation.subtitle
+        switchButton.textContent = translation.switchLabel
     }
 
     companion object : CustomElementReference<HeaderBar>(HeaderBar::class.js) {

@@ -10,7 +10,7 @@ internal enum class Lang { EN, ZH }
  * languages is a walk over the sections, not a re-render. Data that the section derives from metadata
  * (a member signature, a resource path) never comes from here.
  */
-internal class Copy(
+internal class Translation(
     val langLabel: String,
     val switchLabel: String,
     val title: String,
@@ -48,7 +48,7 @@ internal class Copy(
     val membersSummary: (constructors: Int, functions: Int, properties: Int) -> String,
 )
 
-internal val english: Copy = Copy(
+internal val english: Translation = Translation(
     langLabel = "EN",
     switchLabel = "中文",
     title = "kmp-reflect",
@@ -91,7 +91,7 @@ internal val english: Copy = Copy(
     membersSummary = { constructors, functions, properties -> "$constructors ctor / $functions fun / $properties prop" },
 )
 
-internal val chinese: Copy = Copy(
+internal val chinese: Translation = Translation(
     langLabel = "中文",
     switchLabel = "EN",
     title = "kmp-reflect",
@@ -134,4 +134,4 @@ internal val chinese: Copy = Copy(
     membersSummary = { constructors, functions, properties -> "$constructors 构造 / $functions 函数 / $properties 属性" },
 )
 
-internal fun copyOf(lang: Lang): Copy = if (lang == Lang.EN) english else chinese
+internal fun translationOf(lang: Lang): Translation = if (lang == Lang.EN) english else chinese
