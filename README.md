@@ -1,94 +1,108 @@
-# ktjs-wrapper-template
+# kmp-reflect
 
-<p align="center"><img src="docs/src/jsMain/resources/static/img/ktjs-wrapper-template-logo.png" width="120" alt="ktjs-wrapper-template"></p>
+<p align="center"><img src="docs/src/jsMain/resources/static/img/kmp-reflect-logo.png" width="120" alt="kmp-reflect"></p>
 
-A Kotlin/JS wrapper project that already runs: one Gradle module wrapping
-[`@vaadin/button`](https://www.npmjs.com/package/@vaadin/button), a demo page, a documentation site
-built with [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus), and the tests and release
-pipeline around them.
+Compile-time reflection for Kotlin Multiplatform: a KSP processor writes class metadata, annotation
+data, dynamic proxies and inlined resources as ordinary Kotlin source, so `commonMain` code gets an
+API shaped like a typed subset of `java.lang.reflect` — on the JVM, in the browser and in Node.
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+**[Documentation](https://shijianjs.github.io/kmp-reflect/)** ·
+**[Live demo](https://shijianjs.github.io/kmp-reflect/demo/)** ·
+**[API reference](https://shijianjs.github.io/kmp-reflect/api/)** ·
+**[中文说明](README.zh-CN.md)**
 
-**[Documentation](https://shijianjs.github.io/ktjs-wrapper-template/)** ·
-**[Live demo](https://shijianjs.github.io/ktjs-wrapper-template/demo/)** ·
-**[API reference](https://shijianjs.github.io/ktjs-wrapper-template/api/)**
+```kotlin
+KmpReflection.register(DemoReflection)          // generated module object
 
-Copy the repository and rename it — that is the setup. Nothing here is a placeholder waiting for a
-script to fill it in, so `./gradlew build` works on the copy as it is. The rename checklist lives in
-the documentation: [Deriving a project](https://shijianjs.github.io/ktjs-wrapper-template/guide/deriving-a-project).
+val personClass = KmpClasses.of<Person>()
+val instance = personClass.constructor(3)?.new("Ada", 36, "hidden")
+personClass.function("greet", 1)?.invoke(instance, "Hello")   // "Hello, Ada!"
+```
+
+Nothing is loaded or scanned at runtime: the metadata is already in the binary, and every call it
+describes is an inlined Kotlin call generated next to the class it belongs to.
 
 ## Modules
 
-| Module | npm package | Wrapper version |
+| Module | Published | Role |
 | --- | --- | --- |
-| [ktjs-wrapper-template-core](ktjs-wrapper-template-core/README.md) | `@vaadin/button` | `25.3.5-kt.1` |
+| [kmp-reflect-core](kmp-reflect-core) | yes | The runtime: `KmpClass`, `KmpClasses`, proxies, resources. `commonMain` only. |
+| [kmp-reflect-ksp](kmp-reflect-ksp) | yes | The KSP processor: reads sources, writes metadata and module objects. Plain JVM. |
+| [demo](demo) | no | Browser demo, and the integration test for both targets. |
+| [docs](docs) | no | Docusaurus site: `/`, `/demo/` and `/api/` on GitHub Pages. |
 
-The repository keeps one Gradle module per npm package, or per group of packages that share an
-upstream version and release cadence. Tree shaking removes unused declarations from the final
-application bundle, so grouping related packages into one module is cheaper than one module per
-package.
+## Usage
+
+```kotlin
+plugins {
+    kotlin("multiplatform")
+    id("com.google.devtools.ksp")
+}
+
+kotlin {
+    jvm()
+    js { nodejs() }
+    sourceSets.commonMain.dependencies {
+        implementation("io.github.shijianjs:kmp-reflect-core:<version>")
+    }
+}
+
+dependencies {
+    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+}
+
+ksp {
+    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
+}
+```
+
+Annotate a class with `@KmpReflect` (or make it implement `KmpReflectable`), register the generated
+module object once, then look classes up by name, by `KClass` or with a reified type. See
+[Getting started](https://shijianjs.github.io/kmp-reflect/guide/getting-started).
+
+## Features
+
+- **Class metadata** — names, kind, visibility, modifiers, supertypes, type parameters, constructors,
+  functions, properties, enum entries, companion and nested classes.
+- **Annotation data and scanning** — annotation types and typed arguments, `annotatedWith(name)`,
+  `implementing(name)`.
+- **Invocation** — constructors, functions and accessors called through metadata; `suspend` and generic
+  members are described but reported as not invokable.
+- **Dynamic proxies** — a generated implementation per reflected interface, forwarding to a
+  `KmpInvocationHandler`.
+- **Inlined resources** — path, MIME type and Base64 bytes written into generated Kotlin, with a
+  `KmpResources` registry.
+- **No runtime machinery** — no class loading, no scanning, no reflection; works identically on JVM,
+  Kotlin/JS browser and Node.js.
+
+## Targets
+
+| Target | Support |
+| --- | --- |
+| JVM | metadata, invocation, proxies, resources |
+| Kotlin/JS (browser, Node) | metadata, invocation, proxies, resources; reified name lookups fall back to identity |
+| Kotlin/Native, Kotlin/Wasm | not supported — KSP cannot feed generated sources into those compilations |
+
+## Building
+
+```bash
+./gradlew build                       # compile everything, detekt, unit tests
+./gradlew :demo:reflectionTest        # metadata assertions on the JVM target
+./gradlew :demo:jsBrowserDistribution # the demo page bundle
+./gradlew :demo:e2eTest               # Playwright suite over the bundle (Chromium)
+./gradlew pagesSite                   # docs + demo + Dokka, assembled into build/pages
+```
+
+Nothing in the repository depends on a mirror registry, so CI resolves from the official ones; a
+local machine may point Gradle and npm at mirrors without touching anything committed.
 
 ## Versioning
 
-Each module is versioned as `{upstream npm version}-kt.{revision}`. The upstream npm versions are
-declared once in the root [`package.json`](package.json); the revision is read per module from
-[`wrapper-revisions.properties`](wrapper-revisions.properties). Gradle derives the base version and
-the `npm(...)` dependency from these two files:
-
-- Only `-kt.N` versions are published; a version without the suffix never exists.
-- A working tree always adds `-SNAPSHOT`: the derived number is the *next* release, which Central does
-  not have yet, so development builds never impersonate it. Publishing passes `-Pktjs.release=true`,
-  which drops the suffix.
-- Upstream upgrade: change the version in `package.json`; the base version follows automatically
-  while the revision stays, even when the wrapper code itself did not change.
-- Wrapper-only fix: the revision increments (`kt.2`, `kt.3`, ...) while the base version stays.
-- Revisions are tracked per module and only ever increase; they never reset to `kt.1`. A release
-  bumps and publishes only the modules that changed.
-
-## Requirements
-
-- JDK 21 or newer (the build uses Gradle 9.4.1).
-- Node and npm are downloaded automatically by the Kotlin Gradle plugin; `kotlin.js.yarn=false` in
-  `gradle.properties` keeps npm as the package manager.
-- Chromium is downloaded by Playwright the first time browser tests run.
-
-## Build and test
-
-```bash
-./gradlew build                    # compile, Detekt, browser tests
-./gradlew :ktjs-wrapper-template-core:jsBrowserTest
-
-# End-to-end checks for the demo page (Playwright, against the bundled output)
-./gradlew :demo:e2eTest
-
-# Documentation site: Kotlin configuration, Markdown pages, built by ktjs-docusaurus
-./gradlew :docs:docusaurusBuild
-
-# GitHub Pages site (documentation at the root, demo under /demo/, Dokka output under /api/)
-./gradlew pagesSite
-```
-
-After adding or upgrading an npm dependency, refresh the shared lock file:
-
-```bash
-./gradlew kotlinUpgradePackageLock
-```
-
-The `docs` module is a Kotlin/JS project too. All three ktjs-docusaurus versions live in
-`gradle.properties` — the wrapper klib, the Gradle plugin and the kit whose home sections the landing
-page uses — because each of those modules carries its own revision. A SNAPSHOT there is resolved from
-`mavenLocal`, so building the site against an unreleased wrapper means publishing that wrapper
-locally first. The kit's browser bundle is not a Maven artifact: it ships as a resource of the kit's
-klib, and `extractKitBundle` copies it to the site's `static/ktjs-client/`.
-
-## Publishing
-
-Publishing is configured once in the root [`build.gradle.kts`](build.gradle.kts) for all modules.
-Releases run through `.github/workflows/release.yml`: it signs the artifacts, packages one archive per
-Maven coordinate and registers them with the shared Maven Central hub, which merges the pending
-registrations into a single deployment. A derived project that does not want to publish can drop that
-workflow and the publishing block; nothing else depends on it.
+`gradle.properties` holds a single `kmp-reflect.version`; a working tree appends `-SNAPSHOT`, and the
+release workflow passes `-Pkmp.reflect.release=true` to drop it. Every publishable module shares one
+version — they are released together.
 
 ## License
 
-Released under the [MIT License](LICENSE).
+MIT — see [LICENSE](LICENSE).

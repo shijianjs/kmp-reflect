@@ -1,33 +1,34 @@
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import dev.detekt.gradle.extensions.DetektExtension
-import groovy.json.JsonSlurper
 import org.gradle.api.publish.PublishingExtension
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.npm.NpmExtension
 
 plugins {
     kotlin("multiplatform") version "2.4.21" apply false
+    kotlin("jvm") version "2.4.21" apply false
+    id("com.google.devtools.ksp") version "2.3.14" apply false
     id("com.vanniktech.maven.publish") version "0.37.0" apply false
     id("dev.detekt") version "2.0.0-alpha.6" apply false
     id("org.jetbrains.dokka") version "2.3.0"
 }
 
-// A working tree is never a release. Every module derives the version of its *next* release, which
-// Maven Central does not have, so the suffix marks it as unreleased: consumers can tell an artifact
-// built here from one that was published, and a local publish can never shadow a real version.
-// The release workflow passes `-Pktjs.release=true`, which drops the suffix for both the build and
-// `printPublishedVersions`. Nothing else reads the flag.
+// A working tree is never a release: the version in gradle.properties is the one that will be
+// published next, so a local build keeps a `-SNAPSHOT` suffix and can never shadow it. The release
+// workflow passes `-Pkmp.reflect.release=true`, which drops the suffix.
 val versionSuffix =
-    if (providers.gradleProperty("ktjs.release").map(String::toBoolean).getOrElse(false)) "" else "-SNAPSHOT"
+    if (providers.gradleProperty("kmp.reflect.release").map(String::toBoolean).getOrElse(false)) "" else "-SNAPSHOT"
+val projectVersion = providers.gradleProperty("kmp-reflect.version").get().trim()
 extra["versionSuffix"] = versionSuffix
+extra["kmpReflectVersion"] = projectVersion
 
-// Every publishable module shares the prefix, which is also how publishing, Dokka and the version
-// report find them. Keep it in sync with the module directories and settings.gradle.kts.
-val publishedPrefix = "ktjs-wrapper-template-"
+// Every publishable module shares this prefix, which is also how publishing and Dokka find them.
+// Keep it in sync with the module directories and settings.gradle.kts.
+val publishedPrefix = "kmp-reflect-"
 
-// Dokka aggregates every published module into one API reference. `demo` is not part of the
-// published API surface, so it is excluded by the prefix filter.
+// Dokka aggregates every published module into one API reference: the core metadata model, the proxy
+// API, and the KSP processor that produces the code.
 dependencies {
     subprojects
         .filter { it.name.startsWith(publishedPrefix) }
@@ -36,7 +37,7 @@ dependencies {
 
 dokka {
     dokkaPublications.html {
-        moduleName.set("ktjs-wrapper-template")
+        moduleName.set("kmp-reflect")
         outputDirectory.set(layout.buildDirectory.dir("dokka/html"))
     }
 }
@@ -44,29 +45,7 @@ dokka {
 // GitHub-backed namespace; verify it once in the Central Portal. All modules share it.
 // Setting the root `group` alone does not propagate to subprojects.
 val publishedGroup = "io.github.shijianjs"
-
-// npm package versions live in package.json so that Dependabot can update them.
-// Subprojects read this map to declare npm(...) dependencies and derive their version.
-@Suppress("UNCHECKED_CAST")
-val npmVersions: Map<String, String> = run {
-    val manifest = JsonSlurper().parse(file("package.json")) as Map<*, *>
-    (manifest["dependencies"] as Map<String, Any?>).mapValues { it.value.toString() }
-}
-extra["npmVersions"] = npmVersions
-
-// Wrapper revisions are per module: a release only creates new versions for the modules whose
-// revision was bumped, so unchanged modules are not re-uploaded (file/size quota and version
-// noise). Release Count is per Central deployment, not per module: publishing every pending
-// module in one Gradle invocation makes the plugin upload a single deployment.
-@Suppress("UNCHECKED_CAST")
-val wrapperRevisions: Map<String, Int> = run {
-    val properties = java.util.Properties()
-    file("wrapper-revisions.properties").inputStream().use { properties.load(it) }
-    properties.stringPropertyNames().associate { name ->
-        name to properties.getProperty(name).trim().toInt()
-    }
-}
-extra["wrapperRevisions"] = wrapperRevisions
+val repositoryUrl = "https://github.com/shijianjs/kmp-reflect"
 
 // Keep a single webpack instance across the npm workspace: npm otherwise installs a second copy
 // for source-map-loader's peer dependency, and the test bundle fails with
@@ -75,19 +54,17 @@ plugins.withType<NodeJsRootPlugin> {
     extensions.getByType(NpmExtension::class.java).override("webpack", "5.108.1")
 }
 
-// The public API must use kotlin-browser's web.* types. Kotlin/JS's own org.w3c.dom.* and
-// kotlinx.browser.* compile and run against the same objects, but the compiler treats them as
-// unrelated types, which breaks callers that use kotlin-browser. detekt.yml forbids the imports.
+// The demo page builds DOM with kotlin-browser's `web.*` types, and detekt.yml forbids the two
+// overlapping-but-unrelated DOM APIs (`org.w3c.dom.*`, `kotlinx.browser.*`) so that a public API
+// cannot mix them. Applying detekt to every subproject keeps that rule in one place.
 subprojects {
     apply(plugin = "dev.detekt")
 
     extensions.configure<DetektExtension> {
         config.setFrom(rootProject.files("detekt.yml"))
-        // The plain detekt task is wired into check; point it at the multiplatform source tree.
         source.setFrom(files("src"))
     }
 
-    // Only wrapper modules are published and documented; `demo` is the GitHub Pages site.
     if (name.startsWith(publishedPrefix)) {
         apply(plugin = "org.jetbrains.dokka")
     }
@@ -102,24 +79,21 @@ subprojects {
 subprojects {
     if (!name.startsWith(publishedPrefix)) return@subprojects
 
-    check(wrapperRevisions.containsKey(name)) {
-        "Missing '$name' in wrapper-revisions.properties"
-    }
-
     val module = this
-
     group = publishedGroup
 
     apply(plugin = "com.vanniktech.maven.publish")
 
-    // The subproject's Kotlin Multiplatform plugin is applied after this root script runs.
-    // Choosing the javadoc jar earlier would hit the "no compatible plugin" branch and the
-    // plugin's afterEvaluate default (Dokka HTML) would win.
+    // The subproject's Kotlin plugin is applied after this root script runs. Choosing the javadoc
+    // jar earlier would hit the "no compatible plugin" branch and the plugin's afterEvaluate default
+    // (Dokka HTML) would win. Both plugins are handled: `kmp-reflect-ksp` is a plain JVM module.
     plugins.withId("org.jetbrains.kotlin.multiplatform") {
         extensions.configure<MavenPublishBaseExtension> {
-            // Maven Central requires a javadoc jar, but Dokka's HTML output duplicates its static
-            // assets into every module's jar (~1.1 MB each). The API reference is deployed to the
-            // Pages site, so publish the required empty jar instead of the HTML copy.
+            configureBasedOnAppliedPlugins(javadocJar = JavadocJar.Empty())
+        }
+    }
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<MavenPublishBaseExtension> {
             configureBasedOnAppliedPlugins(javadocJar = JavadocJar.Empty())
         }
     }
@@ -129,23 +103,21 @@ subprojects {
         signAllPublications()
 
         // Gradle writes .md5/.sha1 next to every .asc signature. Maven Central does not need
-        // them and they count toward the monthly file quota (KTC-5453, gradle/gradle#20232).
+        // them and they count toward the monthly file quota.
         excludeSignatureChecksums()
 
         pom {
             name.set(module.name)
             description.set(
-                module.provider {
-                    module.description ?: "Kotlin/JS wrapper for ktjs-wrapper-template."
-                }
+                module.provider { module.description ?: "Compile-time reflection for Kotlin Multiplatform." },
             )
-            url.set("https://github.com/shijianjs/ktjs-wrapper-template")
+            url.set(repositoryUrl)
             inceptionYear.set("2026")
 
             licenses {
                 license {
                     name.set("MIT License")
-                    url.set("https://github.com/shijianjs/ktjs-wrapper-template/blob/master/LICENSE")
+                    url.set("$repositoryUrl/blob/main/LICENSE")
                 }
             }
 
@@ -158,9 +130,9 @@ subprojects {
             }
 
             scm {
-                url.set("https://github.com/shijianjs/ktjs-wrapper-template")
-                connection.set("scm:git:git://github.com/shijianjs/ktjs-wrapper-template.git")
-                developerConnection.set("scm:git:ssh://git@github.com/shijianjs/ktjs-wrapper-template.git")
+                url.set(repositoryUrl)
+                connection.set("scm:git:git://github.com/shijianjs/kmp-reflect.git")
+                developerConnection.set("scm:git:ssh://git@github.com/shijianjs/kmp-reflect.git")
             }
         }
     }
@@ -179,9 +151,8 @@ subprojects {
     }
 }
 
-// Prints "<module>=<version>" for every publishable module. Use it to see which versions a release
-// would upload before running publishToMavenCentral, so version derivation stays in the module
-// scripts rather than being duplicated in shell.
+// Prints "<module>=<version>" for every publishable module, so the release workflow never duplicates
+// the version rules in shell.
 tasks.register("printPublishedVersions") {
     val publishedModules = subprojects.filter { it.name.startsWith(publishedPrefix) }
     doLast {

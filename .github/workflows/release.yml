@@ -1,6 +1,6 @@
 name: Release
 
-# One release publishes one or more wrapper modules. Central itself is never contacted from here:
+# One release publishes one or more library modules. Central itself is never contacted from here:
 # this workflow signs the artifacts, packages one archive per Maven coordinate, attaches the archives
 # to a GitHub release and registers them with the Maven Central hub
 # (shijianjs/maven-central-publishing). The hub merges every pending registration into a single
@@ -72,9 +72,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # The module versions are derived from package.json and wrapper-revisions.properties, so the
-      # workflow never repeats the "-kt.N" rule. Only modules whose revision was bumped get a new
-      # version; unchanged modules keep a version that already exists on Central.
+      # Every publishable module shares one version from gradle.properties, so the workflow never
+      # repeats the rule; printPublishedVersions only enumerates the modules.
       - name: Resolve the modules in this release
         id: plan
         env:
@@ -82,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
-          ./gradlew -q printPublishedVersions -Pktjs.release=true | tee build/published-versions.txt
+          ./gradlew -q printPublishedVersions -Pkmp.reflect.release=true | tee build/published-versions.txt
           python3 - "$INPUT_MODULES" build/published-versions.txt build/release-modules.txt <<'PY'
           import sys
 
@@ -119,7 +118,7 @@ jobs:
         # The stored lock describes a working tree, whose module versions carry `-SNAPSHOT`; this
         # invocation derives them without the suffix, so the generated npm packages differ by that
         # string alone and the comparison cannot pass. CI verifies the committed lock on every PR.
-        run: ./gradlew ${{ steps.plan.outputs.tasks }} --stacktrace -Pktjs.release=true -x kotlinStorePackageLock
+        run: ./gradlew ${{ steps.plan.outputs.tasks }} --stacktrace -Pkmp.reflect.release=true -x kotlinStorePackageLock
 
       - name: Package the archives and registrations
         env:
@@ -146,7 +145,7 @@ jobs:
           manifest = json.load(open(sys.argv[1], encoding="utf-8"))
           release = sys.argv[2]
           lines = [
-              f"Wrapper modules released together as `{release}`.",
+              f"Modules released together as `{release}`.",
               "",
               "Maven Central publication is merged into a single deployment by",
               "[maven-central-publishing](https://github.com/shijianjs/maven-central-publishing).",

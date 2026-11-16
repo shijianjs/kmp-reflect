@@ -1,7 +1,11 @@
 name: Deploy the documentation site
 
 on:
-  # Deploying is a manual decision now: run this after the commits worth publishing are on main.
+  # Every commit on main is publishable: the site is the documentation, the demo and the API
+  # reference for the version that is released from the same branch.
+  push:
+    branches: [main]
+  # Deploying on demand stays available for a manual re-run of the same commit.
   workflow_dispatch:
 
 concurrency:

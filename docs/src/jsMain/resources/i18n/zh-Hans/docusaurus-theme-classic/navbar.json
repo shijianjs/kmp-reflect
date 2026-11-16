@@ -1,14 +1,18 @@
 {
   "title": {
-    "message": "ktjs-wrapper-template",
-    "description": "The title in the navbar"
+    "message": "kmp-reflect",
+    "description": "The navbar title"
+  },
+  "logo": {
+    "message": "kmp-reflect logo",
+    "description": "The logo alt text"
   },
   "item.label.Docs": {
     "message": "文档",
     "description": "Navbar item with label Docs"
   },
   "item.label.Demo": {
-    "message": "演示",
+    "message": "Demo",
     "description": "Navbar item with label Demo"
   },
   "item.label.API": {

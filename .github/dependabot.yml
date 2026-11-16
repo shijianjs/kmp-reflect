@@ -31,10 +31,11 @@ updates:
     labels:
       - dependencies
     groups:
-      # One PR per upstream ecosystem. Add a pattern per scope/package family as modules grow.
+      # One PR per upstream ecosystem. The npm tree here is the Kotlin/JS workspace: Docusaurus for
+      # the docs site, webpack for the demo bundle.
       upstream:
         patterns:
-          - "@vaadin/button"
+          - "@docusaurus/*"
 
   - package-ecosystem: github-actions
     directory: "/"

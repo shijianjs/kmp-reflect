@@ -1,84 +1,102 @@
-# ktjs-wrapper-template
+# kmp-reflect
 
-<p align="center"><img src="docs/src/jsMain/resources/static/img/ktjs-wrapper-template-logo.png" width="120" alt="ktjs-wrapper-template"></p>
+<p align="center"><img src="docs/src/jsMain/resources/static/img/kmp-reflect-logo.png" width="120" alt="kmp-reflect"></p>
 
-一个立刻能跑的 Kotlin/JS wrapper 项目：一个 Gradle 模块包装
-[`@vaadin/button`](https://www.npmjs.com/package/@vaadin/button)，加上 demo 页面、用
-[ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 构建的文档站，以及围绕它们的测试与发布
-流水线。
+Kotlin Multiplatform 的编译期反射：KSP 处理器把类元数据、注解数据、动态代理与内联资源写成普通 Kotlin
+源码，于是 `commonMain` 里可以用到一套形似 `java.lang.reflect` 类型化子集的 API —— JVM、浏览器、
+Node 上表现一致。
 
-[English](README.md) | [简体中文](README.zh-CN.md)
+**[文档](https://shijianjs.github.io/kmp-reflect/zh-Hans/)** ·
+**[在线演示](https://shijianjs.github.io/kmp-reflect/demo/)** ·
+**[API 文档](https://shijianjs.github.io/kmp-reflect/api/)** ·
+**[English](README.md)**
 
-**[文档](https://shijianjs.github.io/ktjs-wrapper-template/)** ·
-**[在线演示](https://shijianjs.github.io/ktjs-wrapper-template/demo/)** ·
-**[API 文档](https://shijianjs.github.io/ktjs-wrapper-template/api/)**
+```kotlin
+KmpReflection.register(DemoReflection)          // 生成的模块对象
 
-复制仓库、改名即可——这就是全部「初始化」。这里没有等着脚本替换的占位符，所以复制出来的副本直接
-`./gradlew build` 就能过。改名清单在文档里：
-[派生新项目](https://shijianjs.github.io/ktjs-wrapper-template/zh-Hans/guide/deriving-a-project)。
+val personClass = KmpClasses.of<Person>()
+val instance = personClass.constructor(3)?.new("Ada", 36, "hidden")
+personClass.function("greet", 1)?.invoke(instance, "Hello")   // "Hello, Ada!"
+```
+
+运行时不加载、不扫描：元数据已经在产物里，每条“反射调用”都是紧挨着目标类生成的普通 Kotlin 调用。
 
 ## 模块
 
-| 模块 | npm 包 | wrapper 版本 |
+| 模块 | 是否发布 | 作用 |
 | --- | --- | --- |
-| [ktjs-wrapper-template-core](ktjs-wrapper-template-core/README.zh-CN.md) | `@vaadin/button` | `25.3.5-kt.1` |
+| [kmp-reflect-core](kmp-reflect-core) | 是 | 运行时：`KmpClass`、`KmpClasses`、代理、资源，全部在 `commonMain`。 |
+| [kmp-reflect-ksp](kmp-reflect-ksp) | 是 | KSP 处理器：读源码，写元数据与模块对象。纯 JVM。 |
+| [demo](demo) | 否 | 浏览器 demo，同时是两个目标的集成测试。 |
+| [docs](docs) | 否 | Docusaurus 站点：在 GitHub Pages 上提供 `/`、`/demo/`、`/api/`。 |
 
-仓库按 npm 包（或一组共享上游版本与发版节奏的包）划分 `ktjs-wrapper-template-*` Gradle 模块。终端应用
-打包时本来就会摇树，把相关包合并到一个模块，比每个包各建一个模块更省发布额度和版本噪音。
+## 使用
 
-## 版本约定
+```kotlin
+plugins {
+    kotlin("multiplatform")
+    id("com.google.devtools.ksp")
+}
 
-每个模块的版本为 `{上游 npm 版本}-kt.{修订号}`。上游 npm 版本只在根 [`package.json`](package.json)
-中声明；每个模块的修订号在 [`wrapper-revisions.properties`](wrapper-revisions.properties) 中维护。
-Gradle 从这两份文件推导基础版本和 `npm(...)` 依赖：
+kotlin {
+    jvm()
+    js { nodejs() }
+    sourceSets.commonMain.dependencies {
+        implementation("io.github.shijianjs:kmp-reflect-core:<version>")
+    }
+}
 
-- 只发布带 `-kt.N` 后缀的版本，不存在不带后缀的版本。
-- 工作树里的版本一律再带 `-SNAPSHOT`：推导出的是「下一个要发的版本」，Central 上还没有，开发构建不冒用它。
-  发布时才用 `-Pktjs.release=true` 去掉后缀。
-- 上游升级：改 `package.json` 里的版本，基础版本自动跟随，修订号保持不变。
-- 仅 wrapper 修复：只把对应模块的修订号加一（`kt.2`、`kt.3`……）。
-- 修订号按模块维护，只增不减，永不重置为 `kt.1`。发布时只发修订号变化的模块。
+dependencies {
+    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+}
 
-## 环境要求
-
-- JDK 21 或更高（构建使用 Gradle 9.4.1）。
-- Node 与 npm 由 Kotlin Gradle 插件自动下载；`gradle.properties` 里的 `kotlin.js.yarn=false` 保证包管理器
-  是 npm。
-- 第一次跑浏览器测试时由 Playwright 下载 Chromium。
-
-## 构建与测试
-
-```bash
-./gradlew build                    # 编译、Detekt、浏览器测试
-./gradlew :ktjs-wrapper-template-core:jsBrowserTest
-
-# demo 页面的端到端检查（Playwright，打打包产物）
-./gradlew :demo:e2eTest
-
-# 文档站：Kotlin 配置 + Markdown 页面，由 ktjs-docusaurus 构建
-./gradlew :docs:docusaurusBuild
-
-# GitHub Pages 站点（根目录是文档，demo 在 /demo/，API 文档在 /api/）
-./gradlew pagesSite
+ksp {
+    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
+}
 ```
 
-新增或升级 npm 依赖后，刷新共享锁文件：
+给类加 `@KmpReflect` 注解（或让它实现 `KmpReflectable`），注册一次生成的模块对象，之后就能按名字、
+按 `KClass` 或按 reified 类型查找。详见
+[开始使用](https://shijianjs.github.io/kmp-reflect/zh-Hans/guide/getting-started)。
+
+## 能力
+
+- **类元数据** —— 名称、种类、可见性、修饰符、父类型、类型参数、构造函数、函数、属性、枚举项、
+  伴生对象与嵌套类。
+- **注解数据与扫描** —— 注解类型与类型化实参，`annotatedWith(name)`、`implementing(name)`。
+- **调用** —— 构造函数、函数、访问器都能通过元数据执行；`suspend` 与泛型成员会被描述，但标记为
+  不可调用。
+- **动态代理** —— 每个参与反射的接口生成一个实现类，转发给 `KmpInvocationHandler`。
+- **内联资源** —— 路径、MIME 与 Base64 字节写进生成的 Kotlin，并提供 `KmpResources` 注册表。
+- **没有运行时机制** —— 不加载类、不扫描、不反射；JVM、Kotlin/JS 浏览器、Node.js 行为一致。
+
+## 平台
+
+| 目标 | 支持 |
+| --- | --- |
+| JVM | 元数据、调用、代理、资源 |
+| Kotlin/JS（浏览器、Node） | 元数据、调用、代理、资源；reified 名称查找退化为身份比较 |
+| Kotlin/Native、Kotlin/Wasm | 不支持 —— KSP 无法把生成的源码接入这些 compilation |
+
+## 构建
 
 ```bash
-./gradlew kotlinUpgradePackageLock
+./gradlew build                       # 全量编译、detekt、单元测试
+./gradlew :demo:reflectionTest        # JVM 目标上的元数据断言
+./gradlew :demo:jsBrowserDistribution # demo 页面 bundle
+./gradlew :demo:e2eTest               # 针对 bundle 的 Playwright 套件（Chromium）
+./gradlew pagesSite                   # 文档 + demo + Dokka，合成到 build/pages
 ```
 
-`docs` 模块同样是 Kotlin/JS 项目。三个 ktjs-docusaurus 版本都写在 `gradle.properties` 里：wrapper klib、
-Gradle 插件、以及首页分区用到的工具箱——那个项目的每个模块各自带 `-kt.N` 修订号。写 SNAPSHOT 时从
-`mavenLocal` 解析。工具箱的浏览器那一半不是独立的 Maven 产物，而是 kit klib 里的资源，由
-`extractKitBundle` 解到站点的 `static/ktjs-client/`。
+仓库里没有任何东西依赖镜像源，CI 始终走官方仓库；本机可以把 Gradle 与 npm 指向国内镜像，但不会
+提交到仓库。
 
-## 发布
+## 版本
 
-发布配置统一在根 [`build.gradle.kts`](build.gradle.kts) 里，对所有模块生效。`.github/workflows/release.yml`
-签名、按 Maven 坐标打包并注册到共享的 Maven Central hub，由 hub 合并成一次 deployment。派生项目如果不想
-发布，删掉那条工作流和发布块即可，其它部分不依赖它。
+`gradle.properties` 里只有一个 `kmp-reflect.version`；工作树构建会加 `-SNAPSHOT`，发布流程传
+`-Pkmp.reflect.release=true` 去掉它。所有发布模块共用一个版本，一起发。
 
-## 许可证
+## 许可
 
-[MIT](LICENSE)
+MIT —— 见 [LICENSE](LICENSE)。

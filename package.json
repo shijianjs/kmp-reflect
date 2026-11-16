@@ -1,7 +1,7 @@
 {
-  "name": "ktjs-wrapper-template-npm-versions",
+  "name": "kmp-reflect-npm-workspace",
   "private": true,
-  "description": "Source of truth for npm package versions used by the Kotlin/JS build. Read by build.gradle.kts and updated by Dependabot. The browserslist entry is found by walking up from the generated site directory: without it Babel has no targets, downlevels async/await to a regenerator state machine, and `@docusaurus/theme-mermaid`'s `if (__DOCUSAURUS_MERMAID_LAYOUT_ELK_ENABLED__)` guard stops being dead code — the build then fails on the optional `@mermaid-js/layout-elk` peer that is deliberately not installed.",
+  "description": "npm workspace anchor for the Kotlin/JS build. The browserslist entry is found by walking up from the generated site directory: without it Babel has no targets and downlevels async/await to a regenerator state machine, which turns the Docusaurus build into an ES5 bundle. There are no runtime npm dependencies here — the docs site's @docusaurus/* packages come with the ktjs-docusaurus klib.",
   "browserslist": {
     "production": [
       ">0.5%",
@@ -14,8 +14,5 @@
       "last 1 safari version"
     ]
   },
-  "dependencies": {
-    "@docusaurus/theme-mermaid": "3.10.2",
-    "@vaadin/button": "25.3.5"
-  }
+  "dependencies": {}
 }

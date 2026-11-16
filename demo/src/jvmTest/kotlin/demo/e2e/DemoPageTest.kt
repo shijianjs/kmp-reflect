@@ -5,56 +5,75 @@ import com.microsoft.playwright.junit.UsePlaywright
 import com.microsoft.playwright.options.WaitUntilState
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.junitpioneer.jupiter.RetryingTest
+import org.junit.jupiter.api.Test
 
 /**
- * Smoke checks for the demo page: it must load the bundle, apply its stylesheet, render the wrapped
- * custom element and produce no console errors or failed requests.
+ * Smoke checks for the demo page: the bundle loads, the metadata sections render, the language
+ * switch re-renders, and nothing logs an error or fails a request.
+ *
+ * The page reads only generated metadata, so a green run here means the processor also ran for the
+ * JS target — that is the whole point of running the browser suite in CI.
  */
 @UsePlaywright(DemoOptions::class)
 class DemoPageTest {
-    @RetryingTest(maxAttempts = 2)
-    fun `page renders the project heading and styles`(page: Page) {
+    @Test
+    fun `page renders the heading and stylesheet`(page: Page) {
         openPage(page)
 
-        assertTrue(page.title().contains("ktjs-wrapper-template"), "title: ${page.title()}")
-        assertEquals("ktjs-wrapper-template demo", page.locator("h1").textContent())
-
-        // The logo is copied in from the site's static files by the `brandAssets` task.
-        assertTrue(page.locator("img.logo").isVisible(), "the demo serves the project logo")
+        assertTrue(page.title().contains("kmp-reflect"), "title: ${page.title()}")
+        assertEquals("kmp-reflect", page.locator("h1.title").textContent())
 
         val display = page.locator(".page").evaluate("(node) => getComputedStyle(node).display") as String
         assertTrue(display != "contents", "the stylesheet applies to .page (display = $display)")
     }
 
-    @RetryingTest(maxAttempts = 2)
-    fun `the wrapped element is upgraded and reacts to a click`(page: Page) {
+    @Test
+    fun `reflected classes are listed and selectable`(page: Page) {
         openPage(page)
 
-        val counter = page.locator("vaadin-button").first()
-        assertEquals("Click me", counter.textContent())
-        assertEquals("Clicks: 0", page.locator(".status").textContent())
+        val personRow = page.locator("tr.row", Page.LocatorOptions().setHasText("demo.model.Person"))
+        assertTrue(personRow.count() > 0, "Person is listed among the reflected classes")
 
-        counter.click()
+        page.locator("tr.row", Page.LocatorOptions().setHasText("Person"))
+            .first()
+            .click()
 
-        assertEquals("Clicked once", counter.textContent())
-        assertEquals("Clicks: 1", page.locator(".status").textContent())
+        val members = page.locator(".detail .member").allTextContents()
+        assertTrue(members.any { it.contains("fun greet(") }, "members: $members")
+        assertTrue(members.any { it.contains("val greeting") }, "properties are listed too")
     }
 
-    @RetryingTest(maxAttempts = 2)
-    fun `the mapped property reaches the element`(page: Page) {
+    @Test
+    fun `metadata drives construction, invocation and the proxy`(page: Page) {
         openPage(page)
 
-        val counter = page.locator("vaadin-button").first()
-        page.getByText("Disable the other button").click()
-
-        assertTrue(
-            counter.evaluate("(node) => node.disabled") as Boolean,
-            "clicking the second button sets the property on the first",
-        )
+        val output = page.locator(".output").allTextContents().joinToString(" | ")
+        assertTrue(output.contains("Hello, Ada!"), "invocation output: $output")
+        assertTrue(output.contains("proxy(greet) -> world"), "proxy output: $output")
     }
 
-    @RetryingTest(maxAttempts = 2)
+    @Test
+    fun `annotation scan and resources are shown`(page: Page) {
+        openPage(page)
+
+        val text = page.locator(".output").allTextContents().joinToString(" | ")
+        assertTrue(text.contains("name=person"), "annotation arguments: $text")
+        assertTrue(text.contains("config.json"), "resource paths: $text")
+        assertTrue(page.locator("img.thumb").count() == 1, "the SVG resource is rendered from its bytes")
+    }
+
+    @Test
+    fun `language switch re-renders in Chinese`(page: Page) {
+        openPage(page)
+
+        page.locator(".lang-switch").click()
+
+        assertEquals("EN", page.locator(".lang-switch").textContent())
+        assertTrue(page.locator("h2").first().textContent()!!.contains("已反射的类"))
+        assertTrue(page.locator("h2").allTextContents().any { it.contains("动态代理") })
+    }
+
+    @Test
     fun `page logs no console errors or failed requests`(page: Page) {
         val consoleErrors = mutableListOf<String>()
         val failedRequests = mutableListOf<String>()

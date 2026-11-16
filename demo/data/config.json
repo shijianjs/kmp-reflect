@@ -1,0 +1,9 @@
+{
+  "title": "kmp-reflect demo",
+  "features": [
+    "compile-time metadata",
+    "dynamic proxy",
+    "inlined classpath resources"
+  ],
+  "version": 1
+}

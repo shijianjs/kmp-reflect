@@ -1,57 +1,98 @@
 ---
-sidebar_position: 1
+title: 开始使用
+description: Gradle 配置、KSP 选项，以及第一个参与反射的类。
 ---
 
-# 快速开始
+# 开始使用
 
-## 环境要求
+## Gradle 配置
 
-- JDK 21 或更高；Gradle wrapper 已入库（9.4.1）。
-- Node 与 npm 由 Kotlin Gradle 插件下载并驱动——没有需要手动执行的 `npm install`，`kotlin.js.yarn=false`
-  保证包管理器是 npm。
-- 第一次跑浏览器测试时会下载 Chromium（Playwright）。
+本库由两个产物组成：运行时 `kmp-reflect-core`（多平台库）与处理器 `kmp-reflect-ksp`（纯 JVM 产物，
+由 KSP 在编译器进程里加载）。
 
-## 构建、测试、发布
+```kotlin title="build.gradle.kts"
+plugins {
+    kotlin("multiplatform")
+    id("com.google.devtools.ksp")
+}
 
-```bash
-./gradlew build                    # 编译、Detekt、浏览器测试
-./gradlew :ktjs-wrapper-template-core:jsBrowserTest
-./gradlew :demo:e2eTest            # 用 Playwright 打打包后的 demo 页面
-./gradlew :docs:docusaurusBuild    # 文档站
-./gradlew pagesSite                # 根目录是文档，demo 在 /demo/，Dokka 在 /api/
+kotlin {
+    jvm()
+    js { nodejs() }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation("io.github.shijianjs:kmp-reflect-core:<version>")
+        }
+    }
+}
+
+dependencies {
+    // KSP 按目标分别运行：每个目标都要注册一次处理器。
+    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+}
 ```
 
-`build` 不含 demo 的端到端套件，也不组装 Pages 站点：两者都要浏览器，在 CI 里是单独的步骤。
+`<version>` 换成你需要的版本，例如 `0.1.0`。产物发布在 Maven Central 的 `io.github.shijianjs` 组下。
 
-## 开发
+## 让一个类参与反射
 
-```bash
-./gradlew :docs:docusaurusStart    # 文档站的开发服务器
-./gradlew :demo:jsBrowserRun       # demo 页面的开发服务器
+两种方式，可以混用：
+
+```kotlin
+@KmpReflect                       // 注解，带类级选项
+class Person(val name: String)
+
+object Toolbox : KmpReflectable   // 标记接口，没有选项
 ```
 
-Docusaurus 监听站点目录，改 Markdown 即时刷新；改 Kotlin 要先 `./gradlew :docs:docusaurusSite`，因为
-站点 import 的是编译产物。
+只对当前模块里的 `public` 声明生效（`includeNonPublic = true` 时也包含 `internal` / `protected`）。
+嵌套类必须自己声明参与；伴生对象会随所属类一起被反射。`@KmpReflectIgnore` 可以把单个函数或属性从
+已反射的类里去掉。
 
-## 目录结构
+## 指定模块对象
 
-| 路径 | 内容 |
+处理器为每个类生成一个元数据文件，外加一个把它们汇总起来的**模块对象**。用 KSP 参数命名：
+
+```kotlin
+ksp {
+    // 包名:对象名 —— 生成 `object DemoReflection : KmpReflectModule`
+    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
+    arg("kmp.reflect.module", "demo")
+}
+```
+
+启动时注册一次。之后所有查找与扫描只能看到注册过的内容：
+
+```kotlin
+KmpReflection.register(DemoReflection)
+
+val personClass = KmpClasses.of<Person>()
+```
+
+## 使用
+
+```kotlin
+val personClass = KmpClasses.of<Person>()
+
+personClass.properties.map { it.name }              // [name, age, greeting]
+personClass.function("greet", 1)?.isInvokable       // true
+
+val instance = personClass.constructor(3)?.new("Ada", 36, "hidden")
+personClass.function("greet", 1)?.invoke(instance, "Hi")   // "Hi, Ada!"
+```
+
+参数以 `Any?` 传入，在生成的 lambda 里转型，因此声明的类型仍然有效：类型不对会在调用处抛
+`ClassCastException`，与 `Method.invoke` 一致。
+
+## 其他 KSP 选项
+
+| 选项 | 含义 |
 | --- | --- |
-| `package.json` | npm 版本的唯一来源（Dependabot 维护） |
-| `wrapper-revisions.properties` | 每个模块的 `-kt.N` 修订号 |
-| `ktjs-wrapper-template-core/src/jsMain/kotlin` | wrapper 声明 |
-| `ktjs-wrapper-template-core/src/jsTest/kotlin` | 对应的浏览器测试 |
-| `demo/src/jsMain` | demo 页面与它的 Kotlin 入口 |
-| `docs/src/jsMain/kotlin` | 站点配置与侧边栏 |
-| `docs/src/jsMain/resources` | Markdown 页面、MDX 首页、样式、译文 |
+| `kmp.reflect.registry` | 生成模块对象的 `包名:对象名`。不给则不生成 registry。 |
+| `kmp.reflect.module` | `DemoReflection.module` 报告的名字，默认取 Kotlin 模块名。 |
+| `kmp.reflect.resources` | 需要内联的资源目录，用逗号、分号或路径分隔符分隔。见[内联资源](resources.md)。 |
+| `kmp.reflect.visibility` | `all`（默认）或 `public`：后者丢弃所有非 `public` 声明，与注解无关。 |
 
-## 锁文件
-
-整个 workspace 的 npm 依赖只解析一次，钉在 `kotlin-js-store/package-lock.json`。新增或升级 npm 依赖、
-或者改了模块版本之后要重新生成：
-
-```bash
-./gradlew kotlinUpgradePackageLock
-```
-
-CI 会校验提交的锁文件，忘了重新生成会直接构建失败，而不是悄悄漂移。
+多模块项目可以有多个模块对象，各自带自己的 `kmp.reflect.registry`。注册顺序无所谓；同名类以后注册的为准。

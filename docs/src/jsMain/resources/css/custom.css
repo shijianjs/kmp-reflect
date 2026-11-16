@@ -7,3 +7,11 @@
 [data-theme='dark'] {
     --ifm-color-primary: #6cb6ff;
 }
+
+/* The three calls to action on the landing page. */
+.hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 24px 0 32px;
+}

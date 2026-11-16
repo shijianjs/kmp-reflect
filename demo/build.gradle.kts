@@ -1,67 +1,67 @@
+import org.jetbrains.kotlin.gradle.ExperimentalJsTestDsl
+
 plugins {
     kotlin("multiplatform")
+    id("com.google.devtools.ksp")
 }
 
-// The brand image lives with the site's static files and is copied in here, so the demo and the
-// documentation cannot drift apart. `srcDir(task)` only contributes the directory, not the
-// dependency, hence the explicit wiring below.
-val brandAssets = tasks.register<Copy>("brandAssets") {
-    from(rootProject.file("docs/src/jsMain/resources/static/img")) {
-        // Keep the same `img/` layout the site uses, so both pages reference `img/<logo>.png`.
-        into("img")
-    }
-    into(layout.buildDirectory.dir("generated/brand"))
-}
-
+// The demo is the integration test for the processor: the same annotated classes in `commonMain` are
+// reflected for the JVM target (asserted in `jvmTest`) and for the JS target (shown in the page).
 kotlin {
     js {
         useEsModules()
 
         // The demo is a standalone page, so the JS target needs an executable webpack bundle.
         binaries.executable()
-        browser()
+        browser {
+            @OptIn(ExperimentalJsTestDsl::class)
+            test { chromium() }
+        }
     }
 
-    // The JVM target carries only the Playwright end-to-end suite in `src/jvmTest`; the demo itself
-    // stays a JS page.
     jvm()
 
     sourceSets {
-        jsMain {
-            resources.srcDir(brandAssets)
+        commonMain.dependencies {
+            api(project(":kmp-reflect-core"))
         }
         jsMain.dependencies {
+            // DOM access goes through kotlin-browser's typed `web.*` API; detekt forbids mixing it
+            // with `kotlinx.browser.*` or the JDK's `org.w3c.dom.*`.
             implementation("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")
-            // The published modules the demo demonstrates, one line each.
-            implementation(project(":ktjs-wrapper-template-core"))
         }
-
         jvmTest.dependencies {
             implementation("com.microsoft.playwright:playwright:1.61.0")
             implementation("cn.hutool:hutool-all:5.8.48")
             implementation("org.junit.jupiter:junit-jupiter:6.1.3")
-            implementation("org.junit-pioneer:junit-pioneer:2.3.0")
             implementation(kotlin("test-junit5"))
             runtimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
         }
     }
 }
 
-// `srcDir(task)` contributes the directory but not the task dependency; resource processing is what
-// reads that directory, so the edge belongs there.
-tasks.named("jsProcessResources") {
-    dependsOn(brandAssets)
+dependencies {
+    // KSP runs per target, so both configurations are needed: each target gets its own generated
+    // sources, and the tests run on the JVM while the page runs in the browser.
+    add("kspJvm", project(":kmp-reflect-ksp"))
+    add("kspJs", project(":kmp-reflect-ksp"))
+}
+
+ksp {
+    // The module object the demo registers at start-up.
+    arg("kmp.reflect.registry", "io.github.shijianjs.kmp.reflect.demo:DemoReflection")
+    arg("kmp.reflect.module", "demo")
+    // Resource directories are read at compile time, not packaged: the content is inlined.
+    arg("kmp.reflect.resources", layout.projectDirectory.dir("data").asFile.absolutePath)
 }
 
 // ---------------------------------------------------------------------------------------------
 // End-to-end suite
 //
-// The suite lives in `src/jvmTest`, so the demo stays one KMP module instead of carrying a second
-// Gradle project. It uses Playwright's official JUnit 5 integration plus Hutool's SimpleServer for
-// the static bundle, and reuses the Chromium that `kotlinInstallPlaywrightBrowsers` installs for
-// the Kotlin/JS browser tests (hence the pinned Playwright version in the dependencies).
-// `jvmTest` itself is disabled to keep `build`/`check` browser-free; this dedicated task runs the
-// same test compilation on demand.
+// Playwright's JUnit 5 integration plus Hutool's SimpleServer serving the bundled page. It reuses the
+// Chromium that `kotlinInstallPlaywrightBrowsers` installs for the Kotlin/JS browser tests, hence the
+// pinned Playwright version above. `jvmTest` is disabled to keep `build`/`check` browser-free; the
+// unit assertions live in the dedicated `reflectionTest` task instead.
 // ---------------------------------------------------------------------------------------------
 val jvmE2eCompilation = kotlin.targets.getByName("jvm").compilations.getByName("test")
 
@@ -70,9 +70,7 @@ tasks.register<Test>("e2eTest") {
     description = "Runs the Kotlin/JVM Playwright suite against the bundled demo page."
     useJUnitPlatform()
     dependsOn("jsBrowserDistribution")
-    // The Chromium is installed for the Kotlin/JS browser tests of the wrapper module, and this suite
-    // reuses it. A derived project points this at its own first published module.
-    dependsOn(":ktjs-wrapper-template-core:kotlinInstallPlaywrightBrowsers")
+    dependsOn(":demo:kotlinInstallPlaywrightBrowsers")
 
     testClassesDirs = jvmE2eCompilation.output.classesDirs
     classpath = files(jvmE2eCompilation.output.allOutputs, jvmE2eCompilation.runtimeDependencyFiles)
@@ -80,6 +78,19 @@ tasks.register<Test>("e2eTest") {
     systemProperty("e2e.output", layout.buildDirectory.dir("e2e-results").get().asFile.absolutePath)
     systemProperty("junit.jupiter.execution.timeout.default", "30 s")
 
+    outputs.upToDateWhen { false }
+}
+
+// Runs only the reflection assertions (no browser), which is what CI checks besides the page build.
+val reflectionTestSourceSet = kotlin.targets.getByName("jvm").compilations.getByName("test")
+tasks.register<Test>("reflectionTest") {
+    group = "verification"
+    description = "Asserts the generated metadata on the JVM target."
+    useJUnitPlatform()
+    testClassesDirs = reflectionTestSourceSet.output.classesDirs
+    classpath = files(reflectionTestSourceSet.output.allOutputs, reflectionTestSourceSet.runtimeDependencyFiles)
+    filter { includeTestsMatching("io.github.shijianjs.kmp.reflect.demo.*") }
+    systemProperty("junit.jupiter.execution.timeout.default", "30 s")
     outputs.upToDateWhen { false }
 }
 

@@ -1,38 +1,49 @@
 ---
-sidebar_position: 1
 title: 简介
+description: 用 KSP 在编译期为 Kotlin Multiplatform 生成接近 JVM 的反射能力。
 ---
 
-# 简介
+# kmp-reflect
 
-`ktjs-wrapper-template` 是 Kotlin/JS wrapper 的起点，目标通常是 Web Component 生态的 npm 包。它刻意
-**不是**填占位符的脚手架：这个仓库本身就是一个完整项目——能构建、能在真实浏览器里跑测试、有自己的文档站、
-能部署到 GitHub Pages——所以复制一份就能在第一次 `./gradlew build` 跑起来。
+Kotlin Multiplatform 没有反射：`commonMain` 无法查询类的名字、成员或注解，Kotlin/JS 更是完全没有。
+`kmp-reflect` 把这件活在编译期完成：KSP 处理器遍历你声明参与反射的类，把元数据写成普通 Kotlin
+源码，然后提供一套形体接近 `java.lang.reflect` 子集、但类型安全的 API。
 
-## 里面有什么
+```kotlin
+KmpReflection.register(DemoReflection)                       // 生成的模块对象
 
-| 部分 | 作用 |
-| --- | --- |
-| `ktjs-wrapper-template-core` | 示例模块：`@vaadin/button` 25.3.5。一个 npm 包、一个 Gradle 模块、一个 Kotlin 包；加下一个包时照它复制 |
-| `demo` | 用 wrapper 造两个 `<vaadin-button>` 的页面，发布在 `/demo/` |
-| `docs` | 本站：Kotlin 配置 + Markdown 页面，由 [ktjs-docusaurus](https://github.com/shijianjs/ktjs-docusaurus) 的 Gradle 插件构建 |
-| 其余 | 版本清单集中在一个 `package.json`、每模块独立的 `-kt.N` 修订号、Detekt、Playwright 浏览器测试、经 hub 发布到 Maven Central、Pages 工作流 |
+val person = KmpClasses.of<Person>()
+    .constructor(3)
+    ?.new("Ada", 36, "hidden") as? Person
 
-`/api/` 下是发布模块的 Dokka 产物——和 `pagesSite` 组装本站时用的是同一次 Dokka。
+KmpClasses.of<Person>().function("greet", 1)?.invoke(person, "Hello")  // "Hello, Ada!"
+```
+
+运行时不加载、不扫描、不额外分配：元数据已经在代码里，每条“反射调用”都是紧挨着目标类生成的普通
+Kotlin 调用。
+
+## 能得到什么
+
+- **类元数据** —— 名称、包名、种类、可见性、修饰符、父类型、类型参数、构造函数、函数、属性、
+  枚举项、伴生对象与嵌套类。
+- **注解数据** —— 注解类型与实参，不依赖平台注解支持即可读取；扫描之所以能成立，是因为注解本身被
+  写进了元数据。
+- **调用能力** —— 构造函数、函数与属性访问器都能真正执行。签名无法表达的成员（`suspend`、泛型）
+  仍然会被描述，只是标记为不可调用。
+- **动态代理** —— 每个参与反射的接口生成一个实现类，把所有调用转发给你的 handler；这就是脱离 JVM
+  的 `java.lang.reflect.Proxy`。
+- **内联 classpath 资源** —— 路径、MIME 与字节直接编进生成的代码，任何目标都不需要文件系统或网络。
+
+## 命名约定
+
+所有公开类型都带 `Kmp` 前缀（`KmpClass`、`KmpFunction`、`KmpClasses`）：本库在 JVM 上同样可用，那里
+`java.lang.reflect` 的类型无处不在。`KmpClass` 不会与 `Class` 冲突，也让两者混用的代码一眼可辨。
 
 ## 接下来
 
-- [快速开始](guide/getting-started.md)：构建、测试、开发服务器。
-- [派生新项目](guide/deriving-a-project.md)：改名的清单。
-
-## 各部分如何协作
-
-```mermaid
-flowchart TB
-  T["ktjs-wrapper-template<br/>（复制我）"] --> C["core：示例 wrapper"]
-  T --> D["demo：可运行的页面"]
-  T --> G["docs：本站"]
-  C --> V["@vaadin/button"]
-  G --> B["ktjs-docusaurus<br/>Gradle 插件"]
-  B --> P["GitHub Pages"]
-```
+- [开始使用](guide/getting-started.md) —— 配置 Gradle 并反射第一个类。
+- [元数据](guide/metadata.md) —— `KmpClass` 暴露了什么。
+- [动态代理](guide/proxy.md)、[内联资源](guide/resources.md)。
+- [平台](guide/platforms.md) 与 [限制](guide/limitations.md) —— 哪些目标支持到什么程度。
+- [demo](https://shijianjs.github.io/kmp-reflect/demo/) 在真实浏览器里跑这些元数据，
+  [API 文档](https://shijianjs.github.io/kmp-reflect/api/) 由 Dokka 生成。

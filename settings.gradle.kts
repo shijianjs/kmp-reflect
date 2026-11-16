@@ -24,28 +24,22 @@ dependencyResolutionManagement {
     repositories {
         // Same reasoning as above: the wrapper klib of a SNAPSHOT version comes from `mavenLocal`.
         mavenLocal()
-        // Maven Central is the source of truth for kotlin-wrappers: the Aliyun mirror lags behind
-        // and sometimes serves metadata without the corresponding klibs. Gradle does not fall back
-        // to the next repository once metadata is found, so pin these modules to Central even when
-        // a local mirror is active.
-        exclusiveContent {
-            forRepository { mavenCentral() }
-            filter {
-                includeGroup("org.jetbrains.kotlin-wrappers")
-                includeModule("org.jetbrains.kotlin", "kotlin-js-plain-objects")
-            }
-        }
         mavenCentral()
     }
 }
 
-rootProject.name = "ktjs-wrapper-template"
+rootProject.name = "kmp-reflect"
 
-// One Gradle project per published wrapper module. The sample module wraps a single npm package;
-// a derived project adds one include per package (or per group of packages that release together).
-include(":ktjs-wrapper-template-core")
+// The runtime API: annotations, the metadata model, the registry, dynamic proxies and inlined
+// resources. This is what a consumer compiles against.
+include(":kmp-reflect-core")
 
-// The demo page, published under /demo/ of the Pages site. Not a published module.
+// The KSP processor that turns annotated classes into metadata. A plain JVM module: KSP runs inside
+// the Kotlin compiler on the build machine, never on the target platform.
+include(":kmp-reflect-ksp")
+
+// The demo page, published under /demo/ of the Pages site. Not a published module. It applies KSP
+// itself, so it doubles as the integration test for both the JVM and the JS target.
 include(":demo")
 
 // The documentation site: Kotlin configuration plus Markdown, assembled by the ktjs-docusaurus
