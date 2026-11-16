@@ -159,7 +159,9 @@ CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNod
 78 的验证：`:demo` 改为 `kmpReflect { … }`，删掉手写的四条 `add("ksp<Target>")` 与 `ksp { arg }`；
 `:demo:dependencies --configuration ksp{Jvm,Js,WasmJs,MingwX64}` 各解析到处理器、`kspJvmTest` 为空；
 在 `demo/data` 加一个文件后 `:demo:kspKotlinJvm` 从 UP-TO-DATE 变为执行并把它内联进生成代码，删掉后
-再执行一次即消失；`./gradlew build` 通过（四个后端的断言全部重跑）。
+再执行一次即消失；`./gradlew build` 通过（四个后端的断言全部重跑）。CI run `43848505244` 四个 job 全绿，
+三台宿主各自冷缓存编译了 `:kmp-reflect-gradle-plugin:compileKotlin`（Linux 1m21s、macOS 2m48s、
+Windows 5m45s），并跑出 `linuxX64Test` / `macosArm64Test` / `mingwX64Test`。
 
 ## 明确不做
 
