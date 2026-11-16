@@ -229,6 +229,10 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 `<kmp-section>`，外壳 shadow 是 `h2` + `p` + `slot` 三段、adopt 2 份 sheet；`<table class="class-table">`
 位于外壳的 light DOM（`slot` 之前），`td` padding `9px 12px`、`th` 字重 600、`h2` 19px、外壳 margin-top 36px、
 9 行表格、7 个 `.output`、`document.adoptedStyleSheets` 仍为 0、`[style]` 只有 `BODY`，中英截图正常、无报错。
+上线后：Pages run `43923255387`、CI run `43923293242` 均成功；线上
+`https://shijianjs.github.io/kmp-reflect/demo/` 复测结果与本地一致（八个区块各有一个 `<kmp-section>`、
+外壳 2 份 sheet、正文在外壳 light DOM、`td` padding / `h2` 19px / 外壳 36px 间距 / 9 行 / 7 个 `.output`、
+无 console error）。
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid
