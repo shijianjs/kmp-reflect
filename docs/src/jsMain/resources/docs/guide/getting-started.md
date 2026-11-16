@@ -20,6 +20,8 @@ plugins {
 kotlin {
     jvm()
     js { nodejs() }
+    wasmJs { nodejs() }
+    mingwX64()   // pick the native target your build host can link
 
     sourceSets {
         commonMain.dependencies {
@@ -29,10 +31,24 @@ kotlin {
 }
 
 dependencies {
-    // KSP runs once per target: register the processor for each target you build.
+    // KSP runs once per target: register the processor for every target you build. There is no
+    // catch-all configuration in KSP 2.
     add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
     add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspMingwX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
 }
+```
+
+Many targets? Loop instead of repeating:
+
+```kotlin
+kotlin.targets
+    .filter { it.name != "metadata" }
+    .forEach { target ->
+        add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
+            "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    }
 ```
 
 `<version>` is the release you want, for example `0.1.0`. The artifacts are published to Maven Central

@@ -12,10 +12,15 @@
 
 ## 2. 目标平台
 
-- core 与 ksp 只做 `jvm` + `js(IR)`。
-- **明确不做 Kotlin/Native 与 Wasm**：KSP 不生成到这些目标的编译产物，本项目的全部价值来自 KSP 生成代码，
-  在这两类目标上提供 core 产物只会给用户一个「能编译、但没有元数据」的空壳。等 KSP 支持后再评估。
-- core 是纯 Kotlin，理论上可加 native 目标；但那样会对外承诺一个用不了的 API，故不加。
+- 边界是「KSP 能生成到哪」，不是「历史上支持到哪」：**JVM、Kotlin/JS、Kotlin/Wasm、Kotlin/Native 全部支持**。
+  KSP 2 会为每个配置了处理器的目标各建一个符号处理任务，生成的仍是普通 Kotlin 源码，所以后端只要能编译
+  它，元数据就成立。
+- native 目标**按构建宿主声明**（Windows `mingwX64`、Linux `linuxX64`、macOS `macosArm64`/`macosX64`）。
+  理由不是「Native 不支持」，而是「Native 的 compilation 必须由能链接它的宿主来构建」：声明交叉目标只会让
+  本机 `./gradlew build` 失败。发布侧的 klib 覆盖宿主能构建的那些，消费方按需解析变体。
+- Android 现在由 JVM 产物覆盖（没有 `androidTarget` 发布），所以运行库不许碰 JDK 专属 API。
+- core 仍是纯 Kotlin，唯一的平台差异在 `PlatformReflection`：JVM 返回全限定名、Native 返回简单名、
+  JS/Wasm 返回 `null`。reified 查找据此退化，字符串查找在所有平台一致。
 
 ## 3. 元数据形态：编译期内联
 
@@ -57,10 +62,11 @@
 
 ## 8. 测试策略
 
-- core：`commonTest` 覆盖模型与注册表语义（jvm + js 双目标）。
-- 集成：`demo` 模块的 `commonMain` 放被标注的模型类，KSP 同时作用于 jvm 与 js 目标；
-  `jvmTest` 直接断言生成结果（构造、调用、属性、注解扫描、代理、资源）。
-- 页面：`e2eTest`（Playwright + JUnit 5）跑打包后的 demo 页面。
+- core：`commonTest` 覆盖模型与注册表语义，跑在宿主能执行的每个目标上（JVM、JS Node、Wasm Node、宿主 native）。
+- 集成：`demo` 模块的 `commonMain` 放被标注的模型类，KSP 作用于每个声明了 `ksp<Target>` 的目标；
+  `commonTest` 的 `ReflectionTest` 断言同一份生成结果在四个后端上一致（jvm → `jvmTest`/`reflectionTest`，
+  js → `jsNodeTest`/`jsBrowserTest`，wasm → `wasmJsNodeTest`，native → `<target>Test`）。
+- 页面：`e2eTest`（Playwright + JUnit 5）跑打包后的 demo 页面，只在 JVM 上。
 
 ## 9. 本地镜像与 CI
 
@@ -69,9 +75,10 @@
 
 ## v0.2 候选（不在 v0.1 计分范围）
 
-- Gradle 插件：自动按 target 配 KSP、自动传资源目录与注册表选项。
-- Kotlin/Native / Wasm 目标（取决于 KSP）。
+- Gradle 插件：自动按 target 配 KSP（含 native 的循环注册）、自动传资源目录与注册表选项。
+- `androidTarget` 发布，让 Android 消费方拿到自己的变体。
 - `suspend` 函数的调用入口。
 - 接口属性、默认参数参与代理。
 - 注解实例化（`KmpAnnotation` 直接返回注解实例）。
 - 增量编译下的更细粒度失效（v0.1 一次全量生成，功能正确但粒度粗）。
+- 交叉 native 目标（iOS 等）的发布矩阵：需要 macOS 构建机，属于发布流程而非库能力。

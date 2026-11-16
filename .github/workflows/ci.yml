@@ -20,7 +20,7 @@ jobs:
   test:
     name: Build and test
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
@@ -32,6 +32,15 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+
+      # Kotlin/Native is now one of the targets (linuxX64 on this runner), and its toolchain is a
+      # separate ~500 MB download that Gradle does not cache. The key follows the Kotlin version,
+      # because the distribution is tied to it.
+      - name: Cache the Kotlin/Native toolchain
+        uses: actions/cache@v5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-2.4.21
 
       - name: Install browser test dependencies
         run: npx --yes playwright install-deps chromium

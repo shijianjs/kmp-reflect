@@ -31,9 +31,15 @@ description: v0.1 做不到什么，以及后续计划。
 
 ## 平台
 
-- 不支持 Kotlin/Native 与 Kotlin/Wasm，因为 KSP 无法把生成的源码喂进这些 compilation。
-- Kotlin/JS 上 reified 查找（`KmpClasses.of<T>()`、`annotatedWith<A>()`）会退化为身份比较或返回空：
-  该平台不暴露运行时类名。按字符串查找在所有平台都精确。
+- **reified 查找的效果取决于后端能提供多少 `KClass` 信息。** JVM 暴露全限定名，所以
+  `KmpClasses.of<T>()`、`annotatedWith<A>()`、`implementing(K::class)` 在那里是精确的。Kotlin/Native
+  只有简单名，这三个方法按简单名匹配；Kotlin/JS 与 Kotlin/Wasm 完全没有名字，于是按身份解析或返回空。
+  元数据里始终带全限定名：需要精确时用字符串重载（`byName`、`annotatedWith(name)`、
+  `implementing(name)`）。
+- **native 目标按构建宿主声明。** 本仓库只构建宿主能链接、能运行的那一个 native 目标（`mingwX64`、
+  `linuxX64` 或 Apple 的那些）。消费别人发布的其它 native 目标 klib 没问题；自己构建则需要匹配的宿主。
+- **Android 由 JVM 产物覆盖。** 目前没有 `androidTarget` 发布：Android 应用消费 JVM 变体，这也是运行库
+  不碰 JDK 专属 API 的原因之一。
 
 ## API 面
 
@@ -42,8 +48,8 @@ description: v0.1 做不到什么，以及后续计划。
 
 ## v0.2 候选
 
-1. Gradle 插件：把资源目录声明为 KSP 输入，并按目标配置选项。
+1. Gradle 插件：把资源目录声明为 KSP 输入，并按目标（含所有已声明目标）自动配置选项。
 2. 代理支持具体属性（由调用方提供 map 存储）。
 3. 带调用方 `CoroutineScope` 的 `suspend` 调用。
 4. 递归反射同模块内的父类型。
-5. 若 KSP 将来支持在 Native 接受生成源码，则补上 Kotlin/Native。
+5. `androidTarget` 发布，让 Android 消费方拿到自己的变体，而不是回落到 JVM 变体。

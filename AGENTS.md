@@ -18,15 +18,16 @@
 ## 常用命令
 
 ```bash
-./gradlew build                          # 编译 + detekt + 单元测试（jvmTest 已禁用，见下）
-./gradlew :demo:reflectionTest           # JVM 目标上的 12 项元数据断言
+./gradlew build                          # 编译 + detekt + 宿主各目标的测试（jvmTest 已禁用，见下）
+./gradlew :demo:allTests                 # 元数据断言在每个目标上跑（JVM / JS / Wasm / Native）
+./gradlew :demo:reflectionTest           # 同一批断言，只跑 JVM
 ./gradlew :demo:jsBrowserDistribution    # demo 页面 bundle → demo/build/dist/js/productionExecutable
 ./gradlew :demo:e2eTest                  # Playwright 驱动上面那个 bundle（需要 Chromium）
 ./gradlew :docs:docusaurusBuild          # 文档站（先跑一次 kotlinNpmInstall）
 ./gradlew pagesSite                      # 文档 + demo + Dokka 合成到 build/pages
 ```
 
-单测过滤：两个测试任务都用 JUnit Platform，`./gradlew :demo:reflectionTest --tests '*PersonTest*'`。
+单测过滤：两个测试任务都用 JUnit Platform，`./gradlew :demo:reflectionTest --tests '*Reflection*'`。
 
 浏览器测试在本地首次运行前需要：
 
@@ -42,8 +43,11 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
   不加前缀会撞名，也看不出代码里混用了两套。
 - **生成的代码不是源码**：改生成逻辑要改 `kmp-reflect-ksp` 里的 Writer，不要去 `build/generated` 里
   手改，也不要把生成物提交进仓库。
-- **运行时保持 `commonMain`**：除 `PlatformReflection.kt` 的一处 `expect`/`actual`（JVM 返回
-  `qualifiedName`，JS 返回 `null`）之外，不许加平台特化，否则跨平台一致性就没了。
+- **运行时保持 `commonMain`**：目前只有一个 `expect`/`actual`（`PlatformReflection.kt`，JVM 返回全限定名、
+  Native 返回简单名、JS/Wasm 返回 `null`）。新增平台支持时优先改这里，不要在 core 里加平台特化。
+- **目标按「KSP 能生成到哪」决定，不按「以前支持到哪」决定**：core 声明 jvm / js / wasmJs，native 按
+  构建宿主二选一（`mingwX64` / `linuxX64` / Apple）。加新目标 = 加一个 `ksp<Target>` 配置 + 一个
+  `PlatformReflection` actual，不许为了省事把 target 从 `build` 里剔掉。
 - **文本文件用 LF**，临时产物放 `target/` 或 `build/`，不要污染根目录。
 - **`@PublishedApi internal`** 的成员是给内联函数用的，改签名前先 `grep` 调用点。
 
@@ -66,7 +70,8 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 - 资源**内联进生成的 Kotlin**（Base64），不读运行时 classpath —— 否则目标平台要么没有文件系统、
   要么没有统一的资源约定。
 - 扫描只覆盖**已注册的类**，并且只有标了注解/实现接口的类才会被生成 —— 不遍历 classpath。
-- 不支持 Native / Wasm：KSP 产物接不进那些 compilation。
+- 目标覆盖「KSP 能生成到哪」：JVM、JS、Wasm、Native 全部支持；native 只声明宿主这一种，避免
+  `build` 要求宿主链接它链接不了的东西。
 - 版本号单一来源：`gradle.properties` 的 `kmp-reflect.version`，工作树加 `-SNAPSHOT`，
   发布传 `-Pkmp.reflect.release=true`。
 
@@ -81,10 +86,16 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 
 - KSP 生成目录被别的进程占用时删不掉：先 `./gradlew --stop`，把 shell 的 cwd 移出
   `build/generated/**` 再重跑。
-- Kotlin/JS 没有 `KClass.qualifiedName`：需要类名的 reified API 在 JS 上解析失败，那里用
-  `KmpClasses.byName(...)`。
+- Kotlin/JS 与 Wasm 没有 `KClass.qualifiedName`，Native 只有 `simpleName`：需要类名的 reified API 在这些
+  平台上退化，那里用 `KmpClasses.byName(...)` 这类字符串重载。
+- **Kotlin/Native 不允许测试函数名里出现 `,`、`'` 等特殊字符**（`Name contains illegal characters`）。
+  `commonTest` 的方法名必须全平台可编译，所以别用标点，用空格分词。
 - KotlinPoet 的 `%M` 渲染枚举常量会出乱码，用 `%T.%L`。
 - 生成代码里空注解数组要写成 `emptyList<Any?>()`，写 `listOf()` 会类型推断失败。
+- `commonTest` 的 `kotlin("test")` 与 jvmTest 的 `kotlin("test-junit5")` 会在
+  `kotlin-test-framework-impl` capability 上冲突；demo 的 `build.gradle.kts` 里用
+  `capabilitiesResolution` 指定 JVM 侧选 junit5，别删那段。
+- Wasm 目标有自己的 npm 锁：`kotlin-js-store/wasm/package-lock.json`，加 Wasm 依赖时要一起刷新并提交。
 
 ## 长期任务
 

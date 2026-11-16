@@ -103,10 +103,23 @@ public object KmpClasses {
     public inline fun <reified A : Annotation> annotatedWith(): List<KmpClass> =
         annotatedWithName(kmpReflectiveName(A::class))
 
-    /** [annotatedWith] for call sites in public inline functions. */
+    /**
+     * [annotatedWith] for call sites in public inline functions.
+     *
+     * Compares the qualified name first and the annotation's simple name second: Kotlin/Native hands
+     * out simple names only, and Kotlin/JS and Wasm hand out none at all.
+     */
     @PublishedApi
-    internal fun annotatedWithName(qualifiedName: String?): List<KmpClass> =
-        if (qualifiedName == null) emptyList() else annotatedWith(qualifiedName)
+    internal fun annotatedWithName(name: String?): List<KmpClass> =
+        if (name == null) {
+            emptyList()
+        } else {
+            find { candidate ->
+                candidate.annotations.any { annotation ->
+                    annotation.qualifiedName == name || annotation.type.simpleName == name
+                }
+            }
+        }
 
     /**
      * Every registered class whose supertype chain reaches [qualifiedName], this class included when
@@ -124,10 +137,12 @@ public object KmpClasses {
 
     private fun KmpClass.reachesSupertype(target: String, visited: MutableSet<String>): Boolean {
         if (target.isEmpty()) return false
-        if (qualifiedName == target) return true
+        // Native only supplies simple names, so `implementing(SomeInterface::class)` is answered by
+        // either form here; a fully qualified target stays exact.
+        if (qualifiedName == target || simpleName == target) return true
         if (!visited.add(qualifiedName)) return false
         return supertypes.any { supertype ->
-            if (supertype.qualifiedName == target) {
+            if (supertype.qualifiedName == target || supertype.simpleName == target) {
                 true
             } else {
                 val resolved = byNameOrNull(supertype.qualifiedName)

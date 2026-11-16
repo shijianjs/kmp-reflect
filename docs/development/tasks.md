@@ -12,12 +12,14 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 66 |
-| 已完成 | 65 |
+| 总计 | 74 |
+| 已完成 | 73 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
 已完成事项不再逐条列出；签名、验证依据见下方各节末尾的「验证」注记。
+共有两批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
+Wasm，原先「只做 JVM + JS」的边界因此作废）。
 
 ## 已完成
 
@@ -126,6 +128,22 @@
 65 `release.yml` 适配（`-Pkmp.reflect.release=true`，去掉 revision 语义）
 66 根 README（en / zh-CN）
 
+### J. 平台扩展（8，2026-11-16 追加）
+
+67 core 增加 `wasmJs` 目标，并补 `PlatformReflection` 的 wasm actual（`null`：Wasm 不暴露类名）
+68 core 按构建宿主声明 native 目标（`mingwX64` / `linuxX64` / Apple），并补 native actual（`simpleName`）
+69 `KClass` 名称能力分级：`KmpTypeRef.matches`、`annotatedWith(name)`、`implementing(name)` 同时接受
+全限定名与简单名，reified 查找在三个后端上都不再静默失败
+70 demo 接入 `kspWasmJs` 与宿主 native 的 `ksp<Target>`，元数据在四个后端各生成一次
+71 反射断言从 `jvmTest` 迁到 `commonTest`：同一份 12 项断言在 JVM、JS、Wasm、Native 上各跑一遍
+72 `kotlin-js-store/wasm/package-lock.json` 纳入仓库（Wasm 目标有独立的 npm 锁）
+73 文档同步新事实：`platforms` 页重写、`limitations` 改成平台差异表、`getting-started` 给按目标注册与循环
+写法、`intro` / README ×2 / AGENTS 一并更新
+74 CI 增加 `~/.konan` 缓存（Linux runner 现在要构建 `linuxX64`，没有缓存每次都要下 native 工具链）
+
+验证：`:demo:reflectionTest`（JVM）、`:demo:jsBrowserTest`、`:demo:wasmJsNodeTest`、`:demo:mingwX64Test`
+四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过。
+
 ## 明确不做
 
 | 名称 | 排除理由 |
@@ -134,7 +152,8 @@
 
 ## 备注
 
-- 66 项之外的后续工作（Gradle 插件、Kotlin/Native 支持、suspend 调用、注解实例化、代理属性转发）
-  记在 [technical-decisions.md](technical-decisions.md) 的「v0.2 候选」一节。
+- 清单之外的后续工作（Gradle 插件、`androidTarget` 发布、suspend 调用、注解实例化、代理属性转发、
+  交叉 native 发布矩阵）记在 [technical-decisions.md](technical-decisions.md) 的「v0.2 候选」一节。
 - 发布流程（`release.yml`）只在 `workflow_dispatch` 手动触发时执行，本地不冒用签名密钥，因此
   “配置已适配”不等于“已验证上传”，验证归属 hub 仓库。
+- 交叉 native 目标（iOS 等）不在本机验证范围：Apple 目标只能在 macOS 宿主上构建与运行。

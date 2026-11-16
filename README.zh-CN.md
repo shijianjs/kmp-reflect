@@ -47,8 +47,10 @@ kotlin {
 }
 
 dependencies {
+    // 每个目标一条配置；只加你项目真正会构建的目标。
     add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
     add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
 }
 
 ksp {
@@ -73,17 +75,25 @@ ksp {
 
 ## 平台
 
+KSP 能为哪些后端生成 Kotlin 源码，本库就支持哪些 —— 运行库全在 `commonMain`，目标不需要额外产物：
+
 | 目标 | 支持 |
 | --- | --- |
-| JVM | 元数据、调用、代理、资源 |
-| Kotlin/JS（浏览器、Node） | 元数据、调用、代理、资源；reified 名称查找退化为身份比较 |
-| Kotlin/Native、Kotlin/Wasm | 不支持 —— KSP 无法把生成的源码接入这些 compilation |
+| JVM（Android 应用经 JVM 产物消费） | 元数据、调用、代理、资源 |
+| Kotlin/JS（浏览器、Node） | 元数据、调用、代理、资源；reified 查找退化为身份比较 |
+| Kotlin/Wasm（`wasmJs`） | 元数据、调用、代理、资源；reified 查找退化为身份比较 |
+| Kotlin/Native | 元数据、调用、代理、资源；reified 查找按简单名匹配 |
+
+KSP 按目标配置（`kspJvm`、`kspJs`、`kspWasmJs`、`kspMingwX64` ……），KSP 2 没有 catch-all 配置。
+本仓库按构建宿主声明一个 native 目标（Windows 用 `mingwX64`、Linux 用 `linuxX64`、macOS 用 Apple 的），
+因此 `./gradlew build` 永远不会要求宿主编译它链接不了的可执行文件。
 
 ## 构建
 
 ```bash
-./gradlew build                       # 全量编译、detekt、单元测试
-./gradlew :demo:reflectionTest        # JVM 目标上的元数据断言
+./gradlew build                       # 全量编译、detekt、宿主各目标的测试
+./gradlew :demo:allTests              # 每个目标上的元数据断言（JVM、JS、Wasm、Native）
+./gradlew :demo:reflectionTest        # 同一批断言，只跑 JVM
 ./gradlew :demo:jsBrowserDistribution # demo 页面 bundle
 ./gradlew :demo:e2eTest               # 针对 bundle 的 Playwright 套件（Chromium）
 ./gradlew pagesSite                   # 文档 + demo + Dokka，合成到 build/pages

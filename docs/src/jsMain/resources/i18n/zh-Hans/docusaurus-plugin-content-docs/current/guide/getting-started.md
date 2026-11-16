@@ -19,6 +19,8 @@ plugins {
 kotlin {
     jvm()
     js { nodejs() }
+    wasmJs { nodejs() }
+    mingwX64()   // 换成你的构建宿主能链接的 native 目标
 
     sourceSets {
         commonMain.dependencies {
@@ -28,10 +30,23 @@ kotlin {
 }
 
 dependencies {
-    // KSP 按目标分别运行：每个目标都要注册一次处理器。
+    // KSP 按目标分别运行：每个要构建的目标都注册一次处理器。KSP 2 没有 catch-all 配置。
     add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
     add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspMingwX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
 }
+```
+
+目标很多就直接循环：
+
+```kotlin
+kotlin.targets
+    .filter { it.name != "metadata" }
+    .forEach { target ->
+        add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
+            "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    }
 ```
 
 `<version>` 换成你需要的版本，例如 `0.1.0`。产物发布在 Maven Central 的 `io.github.shijianjs` 组下。

@@ -34,6 +34,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      # The demo's Kotlin/Native target is declared by host, so dokka and `pagesSite` may compile the
+      # linuxX64 metadata on this runner. Cached, that stays cheap.
+      - name: Cache the Kotlin/Native toolchain
+        uses: actions/cache@v5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-2.4.21
+
       # pagesSite assembles build/pages: the documentation at the root, the demo under /demo/ and
       # Dokka output under /api/.
       - name: Build the Pages site

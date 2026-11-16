@@ -1,0 +1,15 @@
+feat: 支持 Kotlin/Native 与 Wasm，平台边界改为「KSP 能生成到哪」
+
+- core: 增加 wasmJs 目标与按宿主声明的 native 目标（mingwX64 / linuxX64 / macosArm64），
+  补 PlatformReflection 的 native/wasm actual
+- core: KClass 名字能力分级，KmpTypeRef.matches / annotatedWith / implementing 同时接受
+  全限定名与简单名，reified 查找在 JS、Wasm、Native 上不再静默失败
+- demo: 按目标注册 kspJvm / kspJs / kspWasmJs / ksp<Target>；12 项反射断言从 jvmTest 迁到
+  commonTest，在四个后端各跑一遍
+- wasm 目标不再声明链接产物，本机 build 不必下载 binaryen
+- 新增 kotlin-js-store/wasm/package-lock.json（Wasm 独立的 npm 锁）
+- 文档 en/zh、README ×2、AGENTS、technical-decisions、tasks/TODO 同步新的平台事实
+- CI 与 Pages 缓存 ~/.konan，Gradle daemon 堆按后端数量调高
+
+验证：./gradlew build（jvm/jsBrowser/wasmJsNode/mingwX64 四套测试 + detekt）、
+      :demo:e2eTest、pagesSite 均通过。

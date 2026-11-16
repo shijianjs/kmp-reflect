@@ -40,11 +40,16 @@ whether it affects you.
 
 ## Platforms
 
-- Kotlin/Native and Kotlin/Wasm are not supported, because KSP cannot feed generated sources into those
-  compilations.
-- On Kotlin/JS, reified lookups (`KmpClasses.of<T>()`, `annotatedWith<A>()`) fall back to identity or
-  return empty: the platform exposes no runtime class names. String-based lookups are exact
-  everywhere.
+- **Reified lookups depend on what the backend knows about `KClass`.** The JVM exposes qualified names, so
+  `KmpClasses.of<T>()`, `annotatedWith<A>()` and `implementing(K::class)` are exact there. Kotlin/Native
+  exposes simple names only, so those three match by simple name; Kotlin/JS and Kotlin/Wasm expose no
+  names at all, so they resolve by identity or return empty. Metadata always carries the qualified name:
+  use the string overloads (`byName`, `annotatedWith(name)`, `implementing(name)`) when it matters.
+- **A native target is declared per build host.** This repository builds one native target that the
+  host can link and run (`mingwX64`, `linuxX64` or the Apple ones). Consuming a published klib for
+  another native target works; building one requires a matching host.
+- **Android is covered by the JVM artifact.** There is no `androidTarget` publication yet: an Android
+  application consumes the JVM variant, which is why the runtime has no JDK-only API.
 
 ## API surface
 
@@ -55,8 +60,10 @@ whether it affects you.
 
 ## Candidates for v0.2
 
-1. A Gradle plugin that declares resource directories as KSP inputs and wires the options per target.
+1. A Gradle plugin that declares resource directories as KSP inputs and wires the options per target,
+   including looping over every declared target.
 2. Proxy support for concrete properties (backed by a supplied map).
 3. `suspend` invocation with a caller-provided `CoroutineScope`.
 4. Recursive reflection of supertypes that belong to the same module.
-5. Kotlin/Native support if KSP grows a compilation task that accepts generated sources there.
+5. An `androidTarget` publication, so Android consumers get a variant of their own instead of falling
+   back to the JVM one.

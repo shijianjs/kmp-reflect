@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.ExperimentalJsTestDsl
+import org.jetbrains.kotlin.konan.target.HostManager
 
 plugins {
     kotlin("multiplatform")
@@ -6,7 +7,16 @@ plugins {
 }
 
 // The demo is the integration test for the processor: the same annotated classes in `commonMain` are
-// reflected for the JVM target (asserted in `jvmTest`) and for the JS target (shown in the page).
+// reflected for every target. The browser page exercises the JS target; the assertions in
+// `commonTest` run on each target the host can execute (a Windows checkout gets mingwX64, Linux gets
+// linuxX64, a Mac checkout the Apple binary).
+val nativeTarget: String? = when {
+    HostManager.hostIsMingw -> "mingwX64"
+    HostManager.hostIsLinux -> "linuxX64"
+    HostManager.hostIsMac -> "macosArm64"
+    else -> null
+}
+
 kotlin {
     js {
         useEsModules()
@@ -21,9 +31,24 @@ kotlin {
 
     jvm()
 
+    // Kotlin/Wasm has no page of its own here: it is covered by the same assertions in `commonTest`,
+    // which is what proves the generated metadata compiles and resolves on that backend too.
+    wasmJs {
+        nodejs()
+    }
+
+    when (nativeTarget) {
+        "mingwX64" -> mingwX64()
+        "linuxX64" -> linuxX64()
+        "macosArm64" -> macosArm64()
+    }
+
     sourceSets {
         commonMain.dependencies {
             api(project(":kmp-reflect-core"))
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
         jsMain.dependencies {
             // DOM access goes through kotlin-browser's typed `web.*` API; detekt forbids mixing it
@@ -41,10 +66,28 @@ kotlin {
 }
 
 dependencies {
-    // KSP runs per target, so both configurations are needed: each target gets its own generated
-    // sources, and the tests run on the JVM while the page runs in the browser.
+    // KSP runs per target, so every target that needs generated sources declares the processor.
+    // Kotlin/Native and Wasm are configured the same way as JVM and JS: the processor itself is a
+    // JVM artifact that runs inside the compiler on the build host.
     add("kspJvm", project(":kmp-reflect-ksp"))
     add("kspJs", project(":kmp-reflect-ksp"))
+    add("kspWasmJs", project(":kmp-reflect-ksp"))
+    nativeTarget?.let { target ->
+        add("ksp${target.replaceFirstChar { it.uppercaseChar() }}", project(":kmp-reflect-ksp"))
+    }
+}
+
+// `commonTest` depends on `kotlin-test`, which Gradle resolves per target; the JVM test compilation
+// additionally depends on `kotlin-test-junit5` for the Playwright suite. Both artifacts provide the
+// `kotlin-test-framework-impl` capability, so the JVM test classpath has to be told which one wins,
+// or the build fails with a capability conflict.
+listOf("jvmTestCompileClasspath", "jvmTestRuntimeClasspath").forEach { configurationName ->
+    configurations.named(configurationName) {
+        resolutionStrategy.capabilitiesResolution.withCapability("org.jetbrains.kotlin:kotlin-test-framework-impl") {
+            candidates.firstOrNull { it.id.displayName.startsWith("org.jetbrains.kotlin:kotlin-test-junit5") }
+                ?.let { select(it) }
+        }
+    }
 }
 
 ksp {
@@ -61,7 +104,7 @@ ksp {
 // Playwright's JUnit 5 integration plus Hutool's SimpleServer serving the bundled page. It reuses the
 // Chromium that `kotlinInstallPlaywrightBrowsers` installs for the Kotlin/JS browser tests, hence the
 // pinned Playwright version above. `jvmTest` is disabled to keep `build`/`check` browser-free; the
-// unit assertions live in the dedicated `reflectionTest` task instead.
+// unit assertions live in `commonTest` and run per target through the usual test tasks.
 // ---------------------------------------------------------------------------------------------
 val jvmE2eCompilation = kotlin.targets.getByName("jvm").compilations.getByName("test")
 
@@ -81,17 +124,19 @@ tasks.register<Test>("e2eTest") {
     outputs.upToDateWhen { false }
 }
 
-// Runs only the reflection assertions (no browser), which is what CI checks besides the page build.
-val reflectionTestSourceSet = kotlin.targets.getByName("jvm").compilations.getByName("test")
+// Runs only the metadata assertions on the JVM target (no browser): the same class runs on every
+// target through `allTests`, this task is the quick JVM-only entry point.
 tasks.register<Test>("reflectionTest") {
     group = "verification"
     description = "Asserts the generated metadata on the JVM target."
     useJUnitPlatform()
-    testClassesDirs = reflectionTestSourceSet.output.classesDirs
-    classpath = files(reflectionTestSourceSet.output.allOutputs, reflectionTestSourceSet.runtimeDependencyFiles)
+    testClassesDirs = jvmE2eCompilation.output.classesDirs
+    classpath = files(jvmE2eCompilation.output.allOutputs, jvmE2eCompilation.runtimeDependencyFiles)
     filter { includeTestsMatching("io.github.shijianjs.kmp.reflect.demo.*") }
     systemProperty("junit.jupiter.execution.timeout.default", "30 s")
     outputs.upToDateWhen { false }
 }
 
+// The Playwright classes belong to the e2e task; leaving them in `jvmTest` would make `build` need
+// a browser.
 tasks.named<Test>("jvmTest") { enabled = false }

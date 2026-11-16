@@ -48,8 +48,10 @@ kotlin {
 }
 
 dependencies {
+    // One configuration per target; add the ones your project actually builds.
     add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
     add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
 }
 
 ksp {
@@ -78,17 +80,27 @@ module object once, then look classes up by name, by `KClass` or with a reified 
 
 ## Targets
 
+Every backend KSP can generate Kotlin sources for — the runtime is `commonMain`, so nothing else has to
+exist for a target:
+
 | Target | Support |
 | --- | --- |
-| JVM | metadata, invocation, proxies, resources |
-| Kotlin/JS (browser, Node) | metadata, invocation, proxies, resources; reified name lookups fall back to identity |
-| Kotlin/Native, Kotlin/Wasm | not supported — KSP cannot feed generated sources into those compilations |
+| JVM (and Android applications, via the JVM artifact) | metadata, invocation, proxies, resources |
+| Kotlin/JS (browser, Node) | metadata, invocation, proxies, resources; reified lookups fall back to identity |
+| Kotlin/Wasm (`wasmJs`) | metadata, invocation, proxies, resources; reified lookups fall back to identity |
+| Kotlin/Native | metadata, invocation, proxies, resources; reified lookups match by simple name |
+
+KSP is configured per target (`kspJvm`, `kspJs`, `kspWasmJs`, `kspMingwX64`, …) — there is no catch-all
+configuration in KSP 2. This repository declares one native target per build host (`mingwX64` on
+Windows, `linuxX64` on Linux, the Apple ones on macOS), so `./gradlew build` never asks for an
+executable the host cannot link.
 
 ## Building
 
 ```bash
-./gradlew build                       # compile everything, detekt, unit tests
-./gradlew :demo:reflectionTest        # metadata assertions on the JVM target
+./gradlew build                       # compile everything, detekt, tests on the host's targets
+./gradlew :demo:allTests              # the metadata assertions on each target (JVM, JS, Wasm, Native)
+./gradlew :demo:reflectionTest        # the same assertions, JVM only
 ./gradlew :demo:jsBrowserDistribution # the demo page bundle
 ./gradlew :demo:e2eTest               # Playwright suite over the bundle (Chromium)
 ./gradlew pagesSite                   # docs + demo + Dokka, assembled into build/pages

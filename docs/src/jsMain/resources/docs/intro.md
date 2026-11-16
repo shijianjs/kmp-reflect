@@ -38,6 +38,9 @@ describes is an inlined Kotlin call generated next to the class it belongs to.
 - **Inlined classpath resources** — path, MIME type and bytes embedded into generated code, so the
   same lookup works on every target without a file system or a network.
 
+Everything above is generated as ordinary Kotlin source, so it works on **every backend KSP can feed**:
+JVM, Kotlin/JS, Kotlin/Wasm and Kotlin/Native. See [Platforms](guide/platforms.md).
+
 ## Naming
 
 Every public type is prefixed with `Kmp` — `KmpClass`, `KmpFunction`, `KmpClasses` — because the

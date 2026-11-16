@@ -34,6 +34,9 @@ Kotlin 调用。
   的 `java.lang.reflect.Proxy`。
 - **内联 classpath 资源** —— 路径、MIME 与字节直接编进生成的代码，任何目标都不需要文件系统或网络。
 
+以上全部生成为普通 Kotlin 源码，所以 **KSP 能喂进去的每个后端都成立**：JVM、Kotlin/JS、Kotlin/Wasm、
+Kotlin/Native。见[平台](guide/platforms.md)。
+
 ## 命名约定
 
 所有公开类型都带 `Kmp` 前缀（`KmpClass`、`KmpFunction`、`KmpClasses`）：本库在 JVM 上同样可用，那里
