@@ -1,32 +1,48 @@
-import Link from '@docusaurus/Link';
+---
+title: kmp-reflect
+description: Reflection for Kotlin Multiplatform, generated at compile time by KSP
+hide_table_of_contents: true
+---
 
-# kmp-reflect
+import logo from '@site/static/img/kmp-reflect-logo.png';
 
-Reflection for Kotlin Multiplatform, generated at compile time by KSP — class metadata, annotation
-data, invocation, dynamic proxies and inlined classpath resources, all as ordinary Kotlin source.
+{/* The `<ktjs-…>` sections come from the ktjs-docusaurus kit: the Gradle plugin publishes its bundle
+    under `static/ktjs-client/`, and `ClientModule.kt` loads it once the page is hydrated. `href`s stay
+    relative so the same page works under both locale prefixes; `logo` is imported so the URL carries
+    whatever `baseUrl` this site is deployed under. */}
 
-<div className="hero-actions">
-  <Link className="button button--primary button--lg" to="/guide/getting-started">
-    Get started
-  </Link>
-  <Link className="button button--secondary button--lg" to="https://shijianjs.github.io/kmp-reflect/demo/">
-    Open the demo
-  </Link>
-  <Link className="button button--secondary button--lg" to="https://shijianjs.github.io/kmp-reflect/api/">
-    API reference
-  </Link>
-</div>
+<ktjs-hero logo-src={logo} title="kmp-reflect" tagline="JVM-like reflection for Kotlin Multiplatform, generated at compile time">
 
-```kotlin
-KmpReflection.register(DemoReflection)
+<ktjs-action kind="primary" href="guide/getting-started">Get started</ktjs-action>
 
-val personClass = KmpClasses.of<Person>()
-val instance = personClass.constructor(3)?.new("Ada", 36, "hidden")
-personClass.function("greet", 1)?.invoke(instance, "Hello")   // "Hello, Ada!"
-```
+<ktjs-action kind="secondary" href="https://github.com/shijianjs/kmp-reflect" icon="simple-icons:github">GitHub</ktjs-action>
 
-## Pick a language
+</ktjs-hero>
 
-Documentation is available in **English** and **简体中文** — switch with the language menu in the
-navbar. Every page, the demo page and the API reference exist in both, and the demo toggles its
-language in place.
+<ktjs-features section-title="What it gives you" tinted>
+
+<ktjs-feature icon="lucide:boxes" title="Metadata, in plain Kotlin">The processor writes `KmpClass`, `KmpFunction`, `KmpProperty` … as ordinary source, so every backend compiles them — no runtime reflection, no class loading.</ktjs-feature>
+
+<ktjs-feature icon="lucide:tag" title="Opt-in per class">Only classes marked `@KmpReflect` or implementing `KmpReflectable` are recorded, and scanning only ever sees those.</ktjs-feature>
+
+<ktjs-feature icon="lucide:terminal" title="Call it like reflection">`KmpClasses.of<Person>().function("greet")?.invoke(person, "Hello")` — including `suspend` functions through `invokeSuspend`.</ktjs-feature>
+
+<ktjs-feature icon="lucide:copy" title="Generated proxies">A `@KmpReflect` interface gets a proxy class that forwards every call to a `KmpInvocationHandler`, instead of `java.lang.reflect.Proxy`.</ktjs-feature>
+
+<ktjs-feature icon="lucide:file-archive" title="Resources without a runtime">Configured directories are read at compile time and inlined as Base64, with MIME type and size, so a browser or a native binary reads them the same way.</ktjs-feature>
+
+<ktjs-feature icon="lucide:layers" title="Every KSP target">JVM, JS, Wasm and Kotlin/Native all get the same generated code; the Gradle plugin registers the processor per target for you.</ktjs-feature>
+
+</ktjs-features>
+
+<ktjs-next-steps section-title="Where to go next">
+
+<ktjs-step href="guide/getting-started" title="Getting started">Requirements, the Gradle plugin, and the first reflected class.</ktjs-step>
+
+<ktjs-step href="guide/metadata" title="Metadata model">What every `Kmp…` type answers, and how members are invoked.</ktjs-step>
+
+<ktjs-step href="guide/platforms" title="Platforms">What each backend gets, and which limits come from KSP itself.</ktjs-step>
+
+<ktjs-step href="https://shijianjs.github.io/kmp-reflect/api/" title="API reference">Dokka output for the core and processor modules.</ktjs-step>
+
+</ktjs-next-steps>

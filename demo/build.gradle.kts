@@ -55,6 +55,9 @@ kotlin {
             // DOM access goes through kotlin-browser's typed `web.*` API; detekt forbids mixing it
             // with `kotlinx.browser.*` or the JDK's `org.w3c.dom.*`.
             implementation("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")
+            // The page reads its CSS through dom-kit's typed DSL: `createElement` narrowed by tag,
+            // `inlineStyle` over csstype, and one `cssSheet` for the rules inline style cannot express.
+            implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
         }
         jvmTest.dependencies {
             implementation("com.microsoft.playwright:playwright:1.61.0")

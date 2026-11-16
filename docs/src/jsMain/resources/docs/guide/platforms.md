@@ -20,6 +20,18 @@ library answers otherwise comes from generated data. **KSP generates Kotlin sour
 that KSP can feed is a backend this library works on** — the generated code is plain Kotlin, with
 `kotlin.io.encoding.Base64` and ordinary calls.
 
+The pipeline is the same for every target; only the compiler that consumes the generated file changes:
+
+```mermaid
+flowchart LR
+    A["commonMain: annotated classes"] --> B["KSP processor (one task per target)"]
+    B --> C["generated Kotlin: metadata, proxies, resources"]
+    C --> D["JVM"]
+    C --> E["JS"]
+    C --> F["Wasm"]
+    C --> G["Native"]
+```
+
 ## Native targets are declared by host
 
 A Kotlin/Native compilation is always built for the host that runs the build, so this repository

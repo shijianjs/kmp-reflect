@@ -12,15 +12,15 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 78 |
-| 已完成 | 77 |
+| 总计 | 83 |
+| 已完成 | 82 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
 已完成事项不再逐条列出；签名、验证依据见下方各节末尾的「验证」注记。
-共有两批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
+共有三批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
 Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–78 是同一轮之后的逐次推进（suspend、三宿主 CI、
-父类型链接、Gradle 插件）。
+父类型链接、Gradle 插件）；K 是 demo 页面重构与文档站配置还原。
 
 ## 已完成
 
@@ -162,6 +162,39 @@ CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNod
 再执行一次即消失；`./gradlew build` 通过（四个后端的断言全部重跑）。CI run `43848505244` 四个 job 全绿，
 三台宿主各自冷缓存编译了 `:kmp-reflect-gradle-plugin:compileKotlin`（Linux 1m21s、macOS 2m48s、
 Windows 5m45s），并跑出 `linuxX64Test` / `macosArm64Test` / `mingwX64Test`。
+
+### K. demo 页面重构与文档站配置还原（5，2026-11-16 追加）
+
+79 demo 页面接入 `ktjs-dom-kit`：`TagName<T>.createElement { }` 按标签收窄建节点、`inlineStyle` 走
+csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字符串、`as HTMLElement` 强转与
+`unsafeCast<dynamic>(this).onclick`
+80 页面按业务拆包到 `page/`（`HeaderBar`、`ClassBrowser`、`InvocationSection` … `LimitationsSection`、
+`SectionShell`、`OutputList`、`Copy`、`Theme`），保留模式：字段持节点、只有命名 setter
+（`applyCopy` / `toggleSelection`）、仅局部集合用 `replaceChildren`；语言切换不再整页重建
+81 样式从 `demo.css` 迁出：只有内联表达不了的规则（`tr.row:hover`、`.row.is-selected`、
+`.lang-switch:hover`、`box-sizing`）进 `Theme.kt` 的 `PAGE_SHEET`，`installPageStyle()` 用
+`document.adoptedStyleSheets` 挂一次；`index.html` 去掉样式表链接，`demo.css` 删除
+82 docs 还原模板的全功能形态：`docs/build.gradle.kts` 补 `kitBundle` + `extractKitBundle`（解 klib 的
+`ktjs-client/**` 到 `build/generated/kit-bundle`）、`clientModuleFunction`、`browserBundle(-Files)`，
+新增 `ClientModule.kt`（`onRouteDidUpdate` 动态插 `<baseUrl>ktjs-client/index.mjs`），`Config.kt` 补
+`clientModules`（含 `d3-transition`）/ `themes`（`@docusaurus/theme-mermaid`）/ `markdown.mermaid` /
+`themeConfig.mermaid`，`gradle.properties` 补 `ktjs-docusaurus-kit.version=0.1.0`
+83 首页改 kit 版（`<ktjs-hero>` + `<ktjs-action>` + `<ktjs-features>` + `<ktjs-next-steps>`，中英各一份），
+`guide/platforms`（中英）加一张 mermaid 流程图，让 mermaid / d3-transition 这两项配置有真实用途
+
+验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution` 通过；`:demo:e2eTest` 6 个用例、18 项断言全绿
+（`h1.title`、`tr.row`、`.detail .member`、`.output`、`img.thumb`、`.lang-switch`、`.page` 与新页面对得上，
+`fun greet(` / `val greeting` / `Hello, Ada!` / `proxy(greet) -> world` / `name=person` / `config.json`
+逐项命中）；`./gradlew build` 通过（含 detekt）。
+83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
+`/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
+`<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid
+在浏览器里渲染成 SVG（SSG HTML 里为空，是 Docusaurus mermaid 的正常行为），两种语言均无 console error；
+demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地更新都截图核对过。
+79 的实现注记：`document.adoptedStyleSheets` 的类型是 `ReadonlyArray<CSSStyleSheet>`，Kotlin 侧没有
+`push`，只能整体赋值 `arrayOf(*document.adoptedStyleSheets, PAGE_SHEET)`；`Color` / `FontFamily` 都没有
+字符串工厂，调色板改用 `rgb(...)`，字体只能取 `FontFamily.systemUi` / `FontFamily.monospace` 这类常量，
+原 CSS 里的自定义字体栈因此丢失（用系统字体替代，视觉上等价）。
 
 ## 明确不做
 

@@ -19,6 +19,18 @@ description: KSP 能生成代码的每个 Kotlin 后端，以及各后端之间�
 **KSP 生成的是 Kotlin 源码，所以 KSP 能喂进去的每个后端，本库都成立** —— 生成的代码是普通 Kotlin，
 只用到 `kotlin.io.encoding.Base64` 与普通调用。
 
+每个目标走同一条流水线，变的只是消费生成文件的编译器：
+
+```mermaid
+flowchart LR
+    A["commonMain：带注解的类"] --> B["KSP 处理器（每个目标一个任务）"]
+    B --> C["生成的 Kotlin：元数据、代理、资源"]
+    C --> D["JVM"]
+    C --> E["JS"]
+    C --> F["Wasm"]
+    C --> G["Native"]
+```
+
 ## Native 目标按宿主声明
 
 Kotlin/Native 的 compilation 永远是为「跑构建的这台机器」构建的，因此本仓库只声明一个 native 目标：

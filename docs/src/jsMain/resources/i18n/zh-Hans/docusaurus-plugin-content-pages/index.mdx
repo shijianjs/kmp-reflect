@@ -1,31 +1,47 @@
-import Link from '@docusaurus/Link';
+---
+title: kmp-reflect
+description: 为 Kotlin Multiplatform 提供编译期生成的反射能力
+hide_table_of_contents: true
+---
 
-# kmp-reflect
+import logo from '@site/static/img/kmp-reflect-logo.png';
 
-为 Kotlin Multiplatform 提供反射能力：类元数据、注解数据、调用、动态代理与内联的 classpath 资源
-全部由 KSP 在编译期生成为普通 Kotlin 源码。
+{/* 首页的 `<ktjs-…>` 区块来自 ktjs-docusaurus 的 kit：Gradle 插件把它发布到 `static/ktjs-client/`，
+    `ClientModule.kt` 在页面 hydration 之后加载。`href` 保持相对路径，两种语言前缀下都可用；
+    `logo` 通过 import 引入，URL 会带上本站的 `baseUrl`。 */}
 
-<div className="hero-actions">
-  <Link className="button button--primary button--lg" to="/guide/getting-started">
-    开始使用
-  </Link>
-  <Link className="button button--secondary button--lg" to="https://shijianjs.github.io/kmp-reflect/demo/">
-    打开 Demo
-  </Link>
-  <Link className="button button--secondary button--lg" to="https://shijianjs.github.io/kmp-reflect/api/">
-    API 文档
-  </Link>
-</div>
+<ktjs-hero logo-src={logo} title="kmp-reflect" tagline="为 Kotlin Multiplatform 提供接近 JVM 的反射体验，编译期生成">
 
-```kotlin
-KmpReflection.register(DemoReflection)
+<ktjs-action kind="primary" href="guide/getting-started">开始使用</ktjs-action>
 
-val personClass = KmpClasses.of<Person>()
-val instance = personClass.constructor(3)?.new("Ada", 36, "hidden")
-personClass.function("greet", 1)?.invoke(instance, "Hello")   // "Hello, Ada!"
-```
+<ktjs-action kind="secondary" href="https://github.com/shijianjs/kmp-reflect" icon="simple-icons:github">GitHub</ktjs-action>
 
-## 选择语言
+</ktjs-hero>
 
-文档提供 **English** 与 **简体中文** 两套内容，使用导航栏右侧的语言菜单切换。每一页文档、demo 页面
-与 API 文档都有两种语言，demo 页面里也可以就地切换。
+<ktjs-features section-title="它能做什么" tinted>
+
+<ktjs-feature icon="lucide:boxes" title="元数据就是普通 Kotlin">处理器把 `KmpClass`、`KmpFunction`、`KmpProperty` 等写成源码，所有后端都能编译——没有运行时反射，也不加载类。</ktjs-feature>
+
+<ktjs-feature icon="lucide:tag" title="按类显式开启">只有标了 `@KmpReflect` 或实现 `KmpReflectable` 的类才会被记录，扫描也只在这批类里进行。</ktjs-feature>
+
+<ktjs-feature icon="lucide:terminal" title="像反射一样调用">`KmpClasses.of<Person>().function("greet")?.invoke(person, "Hello")`，`suspend` 函数走 `invokeSuspend`。</ktjs-feature>
+
+<ktjs-feature icon="lucide:copy" title="编译期生成代理">`@KmpReflect` 接口会得到代理类，把所有调用转发给 `KmpInvocationHandler`，不依赖 `java.lang.reflect.Proxy`。</ktjs-feature>
+
+<ktjs-feature icon="lucide:file-archive" title="资源不需要运行时">配置的目录在编译期被读取并以内联 Base64 写入源码，附带 MIME 类型与大小，浏览器和 native 读法一致。</ktjs-feature>
+
+<ktjs-feature icon="lucide:layers" title="覆盖每个 KSP 目标">JVM、JS、Wasm 与 Kotlin/Native 拿到同一份生成代码；Gradle 插件按目标注册处理器。</ktjs-feature>
+
+</ktjs-features>
+
+<ktjs-next-steps section-title="接下来看哪里">
+
+<ktjs-step href="guide/getting-started" title="开始使用">环境要求、Gradle 插件，以及第一个被反射的类。</ktjs-step>
+
+<ktjs-step href="guide/metadata" title="元数据模型">每个 `Kmp…` 类型回答什么，成员如何被调用。</ktjs-step>
+
+<ktjs-step href="guide/platforms" title="平台支持">各后端拿到什么，哪些限制来自 KSP 本身。</ktjs-step>
+
+<ktjs-step href="https://shijianjs.github.io/kmp-reflect/api/" title="API 文档">core 与 processor 模块的 Dokka 输出。</ktjs-step>
+
+</ktjs-next-steps>

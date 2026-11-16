@@ -58,8 +58,19 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 
 ## 演示与文档
 
-- demo 页面的 DOM 全部由 Kotlin 构建（`web.dom` / `web.html`），**不要拼 HTML 字符串**；两套文案在
-  `Main.kt` 的 `Copy` 里，`render()` 整页重绘实现中英切换。
+- demo 页面在 `demo/src/jsMain/kotlin/.../demo/page/`，按区块一个类（`HeaderBar`、`ClassBrowser`、
+  `InvocationSection` …），`DemoPage` 只负责挂载；`Main.kt` 只注册元数据并把宿主元素交给 `DemoPage`。
+- 页面写法按 `.agents/skills/ui-code-style`：节点用 `TagName<T>.createElement { }` 建、用字段持有，
+  状态变化只改相关节点（`applyCopy` / `toggleSelection`），**不要**引入 `render()` 式整页重绘；
+  语言切换走各区块的 `applyCopy`，不重建 DOM。
+- 样式内联（`inlineStyle` + `rgb(...)`），只有内联表达不了的规则（`:hover`、`box-sizing` reset）放在
+  `Theme.kt` 的 `PAGE_SHEET`，由 `installPageStyle()` 挂到 `document.adoptedStyleSheets`。**不要**再
+  新增 `demo.css` 之类的集中式样式表。
+- 文档站点的“全功能”配置是一套，别砍：`docs/build.gradle.kts` 的 `kitBundle` / `extractKitBundle` /
+  `clientModuleFunction` / `browserBundle(-Files)`、`docs/.../docs/ClientModule.kt`、
+  `Config.kt` 里的 `clientModules` / `themes` / `markdown.mermaid` / `themeConfig.mermaid`。首页是
+  `pages/index.mdx` 里的 `<ktjs-hero>` / `<ktjs-features>` / `<ktjs-next-steps>`（中英各一份），
+  `guide/platforms` 有一张 mermaid 图。改配置前先确认它确实跑不了，去掉功能不是解决方式。
 - 文档英文源在 `docs/src/jsMain/resources/docs/`，中文镜像在
   `i18n/zh-Hans/docusaurus-plugin-content-docs/current/`。**改一页就要同步另一页**，否则站点两种语言
   内容不一致。
