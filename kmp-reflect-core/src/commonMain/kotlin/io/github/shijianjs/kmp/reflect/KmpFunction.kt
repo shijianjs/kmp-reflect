@@ -8,6 +8,15 @@ package io.github.shijianjs.kmp.reflect
 public typealias KmpFunctionInvoker = (receiver: Any?, arguments: List<Any?>) -> Any?
 
 /**
+ * The invocation capability of a `suspend` [KmpFunction].
+ *
+ * A `suspend` function cannot be called from [KmpFunction.invoke]; this lambda is the entry point
+ * [KmpFunction.invokeSuspend] uses, and it can only be called from a coroutine. The type comes from
+ * the standard library, so supporting `suspend` does not add a coroutines dependency.
+ */
+public typealias KmpSuspendFunctionInvoker = suspend (receiver: Any?, arguments: List<Any?>) -> Any?
+
+/**
  * A reflected member function.
  *
  * Invocation goes through [invoke]: the generated lambda casts the receiver to the declaring class
@@ -21,8 +30,9 @@ public typealias KmpFunctionInvoker = (receiver: Any?, arguments: List<Any?>) ->
  * @property typeParameters type parameters of the function itself.
  * @property modifiers declaration modifiers.
  * @property annotations annotations written on the function.
- * @property isInvokable `false` when the processor could not generate an invocation lambda — a
- * `suspend` function, or one whose signature mentions a type parameter. [invoke] then throws.
+ * @property isInvokable `false` when the processor could not generate an invocation lambda for
+ * [invoke] — a `suspend` function (use [invokeSuspend] instead), or one whose signature mentions a
+ * type parameter. Both entry points then throw.
  */
 public class KmpFunction(
     public val name: String,
@@ -33,10 +43,15 @@ public class KmpFunction(
     public val annotations: List<KmpAnnotation> = emptyList(),
     public val isInvokable: Boolean = true,
     private val invoker: KmpFunctionInvoker? = null,
+    private val suspendInvoker: KmpSuspendFunctionInvoker? = null,
 ) {
-    /** Whether the declaration is `suspend`. Suspended functions cannot be invoked in v0.1. */
+    /** Whether the declaration is `suspend`. */
     public val isSuspend: Boolean
         get() = KmpModifier.SUSPEND in modifiers
+
+    /** Whether [invokeSuspend] can call this function: it is `suspend` and its signature is closed. */
+    public val isSuspendInvokable: Boolean
+        get() = isSuspend && suspendInvoker != null
 
     /** Whether the declaration is `operator`. */
     public val isOperator: Boolean
@@ -65,20 +80,32 @@ public class KmpFunction(
      * match [parameters].
      */
     public fun invoke(receiver: Any?, arguments: List<Any?>): Any? {
-        if (parameters.size != arguments.size) {
-            throw KmpReflectException(
-                "Function '$name' takes ${parameters.size} argument(s), got ${arguments.size}.",
-            )
-        }
-        val invoker = invoker
-            ?: throw KmpReflectException(
-                "Function '$name' is not invokable: " +
-                    if (isSuspend) {
-                        "suspend functions have no synchronous invocation entry point in v0.1."
-                    } else {
-                        "its signature mentions a type parameter."
-                    },
-            )
+        requireArgumentCount(arguments)
+        val invoker = invoker ?: throw notInvokable("invokeSuspend")
+        return invoker(receiver, arguments)
+    }
+
+    /**
+     * Suspends the calling coroutine while running this `suspend` function on [receiver].
+     *
+     * `suspend` functions that suspend for real work exactly like a direct call: the coroutine
+     * suspends at the point the generated lambda calls them.
+     *
+     * @throws KmpReflectException when the function is not `suspend`, is not invokable, or the
+     * argument count does not match [parameters].
+     */
+    public suspend fun invokeSuspend(receiver: Any?, vararg arguments: Any?): Any? =
+        invokeSuspend(receiver, arguments.toList())
+
+    /**
+     * Suspends the calling coroutine while running this `suspend` function on [receiver].
+     *
+     * @throws KmpReflectException when the function is not `suspend` or the argument count does not
+     * match [parameters].
+     */
+    public suspend fun invokeSuspend(receiver: Any?, arguments: List<Any?>): Any? {
+        requireArgumentCount(arguments)
+        val invoker = suspendInvoker ?: throw notInvokable(if (isSuspend) null else "invoke")
         return invoker(receiver, arguments)
     }
 
@@ -89,6 +116,24 @@ public class KmpFunction(
      */
     public inline fun <reified T> invokeAs(receiver: Any?, vararg arguments: Any?): T =
         invoke(receiver, arguments.toList()) as T
+
+    private fun requireArgumentCount(arguments: List<Any?>) {
+        if (parameters.size != arguments.size) {
+            throw KmpReflectException(
+                "Function '$name' takes ${parameters.size} argument(s), got ${arguments.size}.",
+            )
+        }
+    }
+
+    /** [entryPoint] is the method the caller should use instead, when there is one. */
+    private fun notInvokable(entryPoint: String?): KmpReflectException = KmpReflectException(
+        "Function '$name' is not invokable: " +
+            when {
+                entryPoint != null -> "a suspend function has to be called through $entryPoint(...)."
+                isSuspend -> "its signature mentions a type parameter, which the generated code cannot cast."
+                else -> "its signature mentions a type parameter."
+            },
+    )
 
     override fun toString(): String =
         "$name(${parameters.joinToString(", ") { it.toString() }}): $returnType"

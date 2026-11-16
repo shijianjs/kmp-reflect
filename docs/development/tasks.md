@@ -12,14 +12,14 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 74 |
-| 已完成 | 73 |
+| 总计 | 76 |
+| 已完成 | 75 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
 已完成事项不再逐条列出；签名、验证依据见下方各节末尾的「验证」注记。
 共有两批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
-Wasm，原先「只做 JVM + JS」的边界因此作废）。
+Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–76 是同一轮之后的两次推进（suspend、三宿主 CI）。
 
 ## 已完成
 
@@ -140,11 +140,16 @@ Wasm，原先「只做 JVM + JS」的边界因此作废）。
 73 文档同步新事实：`platforms` 页重写、`limitations` 改成平台差异表、`getting-started` 给按目标注册与循环
 写法、`intro` / README ×2 / AGENTS 一并更新
 74 CI 增加 `~/.konan` 缓存（Linux runner 现在要构建 `linuxX64`，没有缓存每次都要下 native 工具链）
+75 `suspend` 函数可调用：处理器为它生成 `suspend` lambda，运行时新增 `KmpFunction.invokeSuspend`
+76 CI 改成三宿主矩阵（ubuntu / macos / windows 各链接自己的 native 目标），浏览器与站点单独一个 job
 
 验证：`:demo:reflectionTest`（JVM）、`:demo:jsBrowserTest`、`:demo:wasmJsNodeTest`、`:demo:mingwX64Test`
-四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过（31s，含 detekt）。
+四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过（含 detekt）。
 CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNodeTest` 均通过，`build` 2m10s，
 `pagesSite` 27s，`:demo:e2eTest` 15s；konan 缓存首次为冷未命中（符合预期，第二次起命中）。
+75 的验证：`Calculator.slowAdd` 在四个后端都由 `commonTest` 调用成功（`runSuspend` 用标准库
+`startCoroutine`，不引入协程依赖），`invoke` 对它抛 `KmpReflectException`。
+76 的验证：三个 `Verify on …` job 全绿，各自跑出 `linuxX64Test` / `macosArm64Test` / `mingwX64Test`。
 
 ## 明确不做
 

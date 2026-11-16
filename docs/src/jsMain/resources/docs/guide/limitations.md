@@ -11,8 +11,10 @@ whether it affects you.
 
 ## Model
 
-- **No `suspend` invocation.** A `suspend` function is described but not callable. Launching it would
-  need a `CoroutineScope`, and choosing one for the caller is not something metadata should do.
+- **`suspend` invocation needs a coroutine.** A `suspend` function is described and callable, but only
+  through `KmpFunction.invokeSuspend` from inside a coroutine: the generated lambda carries the
+  `suspend` modifier, so there is no synchronous entry point to hand to a scheduler. The lambda type is
+  standard library `suspend` — no coroutines dependency is added.
 - **No generic invocation.** A function or constructor whose signature mentions a type parameter
   cannot be called through `Any?` arguments, because the generated call site has no type to cast to.
   It is described instead.
@@ -63,7 +65,6 @@ whether it affects you.
 1. A Gradle plugin that declares resource directories as KSP inputs and wires the options per target,
    including looping over every declared target.
 2. Proxy support for concrete properties (backed by a supplied map).
-3. `suspend` invocation with a caller-provided `CoroutineScope`.
-4. Recursive reflection of supertypes that belong to the same module.
-5. An `androidTarget` publication, so Android consumers get a variant of their own instead of falling
+3. Recursive reflection of supertypes that belong to the same module.
+4. An `androidTarget` publication, so Android consumers get a variant of their own instead of falling
    back to the JVM one.

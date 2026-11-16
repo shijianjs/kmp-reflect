@@ -33,6 +33,9 @@
   消费方编译不过就是编译不过，不会留到运行时才炸。
 - 类型信息用自建的 `KmpTypeRef` 表达（`qualifiedName` / `arguments` / `nullable` / `runtime: KClass<*>?`），
   不依赖 `kotlin-reflect`（JVM-only）。
+- `suspend` 函数用同一个内联 lambda，只是加 `suspend` 修饰（`suspendInvoker`），运行时入口是
+  `KmpFunction.invokeSuspend`。**不引入 `kotlinx-coroutines` 依赖**：`suspend` 函数类型来自标准库，
+  本库不替调用方起协程、也不持有 scope。
 
 ## 4. 命名
 
@@ -43,7 +46,6 @@
   本项目 API 在同一文件里无法区分。
 
 ## 5. 注册与扫描
-
 - 元数据按类生成，聚合由一个「模块对象」完成：`kmp.reflect.registry=<包名>:<对象名>` 选项开启，
   生成 `object <对象名> : KmpReflectModule`，内含 `classes` 与 `resources`。
 - 不做自动注册（没有 `init` 钩子可依赖，JVM 的 `ServiceLoader` 只在 JVM 上存在）。
@@ -75,12 +77,16 @@
 
 - 仓库与 CI 只用官方源；本机镜像走 `~/.gradle/init.d/aliyun-mirror.gradle` 与 `~/.npmrc`，不入库。
 - 刷新 `kotlin-js-store/package-lock.json` 时必须先切回官方 npm 源，否则 CI 报 `Lock file was changed`。
+- **CI 按宿主分矩阵**（`ubuntu-latest` / `macos-latest` / `windows-latest`），每个 job 只构建并运行自己
+  链接得了的 native 目标。理由与「按宿主声明 native 目标」同源：平台支持不是编译一次就成立，得在对应
+  宿主上真的跑起来。浏览器（Playwright/Chromium）与 `pagesSite` 只在 ubuntu 跑，装一次就够。
+- JDK 与 Gradle 的装配收在 `.github/actions/gradle-setup` 复合 action，避免各 job 漂移（官方 KMP CI
+  指南的做法）。`GRADLE_OPTS` 关 daemon、开并行与 build cache。
 
 ## v0.2 候选（不在 v0.1 计分范围）
 
 - Gradle 插件：自动按 target 配 KSP（含 native 的循环注册）、自动传资源目录与注册表选项。
 - `androidTarget` 发布，让 Android 消费方拿到自己的变体。
-- `suspend` 函数的调用入口。
 - 接口属性、默认参数参与代理。
 - 注解实例化（`KmpAnnotation` 直接返回注解实例）。
 - 增量编译下的更细粒度失效（v0.1 一次全量生成，功能正确但粒度粗）。

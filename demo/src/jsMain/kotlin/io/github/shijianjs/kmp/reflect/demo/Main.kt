@@ -93,7 +93,8 @@ private val english = Copy(
     annotationHint = "Annotations are matched by qualified name, so scanning works without JVM reflection.",
     limitationsHeading = "6. Limits you can see here",
     limitations = listOf(
-        "suspend and generic functions are recorded but not invokable - look for the badge in the member list.",
+        "generic functions are recorded but not invokable - look for the badge in the member list.",
+        "suspend functions are callable, but only through invokeSuspend from a coroutine.",
         "proxies need a function-only interface; abstract properties are not forwarded in v0.1.",
         "Kotlin/JS exposes no runtime class names, so reified lookups rely on the generated metadata.",
     ),
@@ -133,7 +134,8 @@ private val chinese = Copy(
     annotationHint = "注解按全限定名匹配，因此扫描不需要 JVM 反射。",
     limitationsHeading = "6. 这里能看到的限制",
     limitations = listOf(
-        "suspend 与泛型函数会被记录，但不可调用——看成员列表里的标记。",
+        "泛型函数会被记录，但不可调用——看成员列表里的标记。",
+        "suspend 函数可调用，但只能从协程里通过 invokeSuspend 调。",
         "代理要求接口只含函数；v0.1 不转发抽象属性。",
         "Kotlin/JS 不提供运行时类名，reified 查找依赖生成的元数据。",
     ),

@@ -40,7 +40,6 @@ greet.invokeAs<String>(person, "Hello")
 
 当处理器无法把调用写成普通 Kotlin 表达式时，`isInvokable` 为 `false`：
 
-- `suspend` 函数 —— v0.1 没有同步入口；
 - 签名里含类型参数的函数（`fun <T> identity(value: T): T`）；
 - 从自身未参与反射的父类型继承来的成员。
 
@@ -48,6 +47,20 @@ greet.invokeAs<String>(person, "Hello")
 `KmpReflectException` 并给出原因。
 
 参数按位置传，默认值不会生效：每个参数都必须给。`vararg` 参数传入元素类型的 `Array`。
+
+## `suspend` 函数
+
+`suspend` 函数和普通函数一样被描述，也能调用，但只能在协程里调：
+
+```kotlin
+val slowAdd = calculatorClass.function("slowAdd", 2) ?: return
+slowAdd.isSuspend          // true
+slowAdd.invokeSuspend(calculator, 3, 4)    // 在 `suspend` 上下文中得到 7
+```
+
+`invoke` 会拒绝它（抛 `KmpReflectException`），因为生成的 lambda 带 `suspend` 修饰，没有可执行的同步
+调用。`invokeSuspend` 只能在协程里调用，scope 与取消权仍归调用方，本库不会自己启动协程。
+`suspend` 属于标准库的函数类型，因此不引入任何依赖。
 
 ## 属性
 

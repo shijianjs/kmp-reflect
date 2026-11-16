@@ -287,13 +287,11 @@ internal class SymbolConverter(
         val returnType = declaration.returnType?.resolve()?.let { typeModel(it) } ?: unitType()
         val typeParameters = declaration.typeParameters.map { typeParameterModel(it) }
         val isSuspend = Modifier.SUSPEND in declaration.modifiers
-        val invokable = !isSuspend &&
-            typeParameters.isEmpty() &&
+        // `suspend` does not block invocation: the writer emits a `suspend` lambda for it, and the
+        // runtime exposes `invokeSuspend`. Only type parameters make a call impossible to inline.
+        val invokable = typeParameters.isEmpty() &&
             parameters.none { it.type.usesTypeParameter } &&
             !returnType.usesTypeParameter
-        if (isSuspend) {
-            logger.info("Function '${declaration.simpleName.asString()}' is suspend; recorded but not invokable.")
-        }
         return FunctionModel(
             name = declaration.simpleName.asString(),
             returnType = returnType,

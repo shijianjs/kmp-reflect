@@ -3,6 +3,7 @@ package io.github.shijianjs.kmp.reflect.demo
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.KmpKind
 import io.github.shijianjs.kmp.reflect.KmpModifier
+import io.github.shijianjs.kmp.reflect.KmpReflectException
 import io.github.shijianjs.kmp.reflect.KmpReflection
 import io.github.shijianjs.kmp.reflect.demo.model.Calculator
 import io.github.shijianjs.kmp.reflect.demo.model.Greeter
@@ -11,9 +12,13 @@ import io.github.shijianjs.kmp.reflect.demo.model.Person
 import io.github.shijianjs.kmp.reflect.demo.model.Shape
 import io.github.shijianjs.kmp.reflect.demo.model.Toolbox
 import io.github.shijianjs.kmp.reflect.resource.KmpResources
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.startCoroutine
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -135,14 +140,25 @@ class ReflectionTest {
     @Test
     fun `unsupported members stay metadata only`() {
         val calculator = KmpClasses.of(Calculator::class)
-        val slowAdd = assertNotNull(calculator.function("slowAdd", 2))
-        assertFalse(slowAdd.isInvokable)
         val identity = assertNotNull(calculator.function("identity", 1))
         assertFalse(identity.isInvokable)
         // `var lastResult` has a private setter, so metadata must not offer a write path.
         val lastResult = assertNotNull(calculator.property("lastResult"))
         assertFalse(lastResult.isWritable)
         assertEquals(3, calculator.function("add", 2)?.invoke(Calculator(), 1, 2))
+    }
+
+    @Test
+    fun `suspend functions are invokable through the suspend entry point`() {
+        val calculator = KmpClasses.of(Calculator::class)
+        val slowAdd = assertNotNull(calculator.function("slowAdd", 2))
+        assertTrue(slowAdd.isSuspend)
+        assertTrue(slowAdd.isInvokable)
+        assertTrue(slowAdd.isSuspendInvokable)
+        // The generated lambda is `suspend`, so the call has to happen inside a coroutine. This
+        // function does not suspend for real work, so the coroutine completes synchronously.
+        assertEquals(7, runSuspend { slowAdd.invokeSuspend(Calculator(), 3, 4) })
+        assertFailsWith<KmpReflectException> { assertNotNull(slowAdd).invoke(Calculator(), 3, 4) }
     }
 
     @Test
@@ -167,5 +183,21 @@ class ReflectionTest {
 
     private companion object {
         const val FullyQualifiedPerson = "io.github.shijianjs.kmp.reflect.demo.model.Person"
+
+        /**
+         * Runs a `suspend` lambda to completion without a coroutines library.
+         *
+         * `startCoroutine` is standard library API, so this works on every target the tests run on.
+         * It only works for coroutines that complete without suspending — which is exactly what the
+         * generated lambda does once the reflected function returns.
+         */
+        fun <T> runSuspend(block: suspend () -> T): T {
+            var result: Result<T>? = null
+            block.startCoroutine(
+                Continuation(EmptyCoroutineContext) { outcome -> result = outcome },
+            )
+            return checkNotNull(result) { "the coroutine suspended; this helper needs one that completes" }
+                .getOrThrow()
+        }
     }
 }

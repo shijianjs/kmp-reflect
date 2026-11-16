@@ -6,8 +6,8 @@
 `KmpReflectable` 的类获得接近 JVM 反射的编程体验，命名统一带 `Kmp` 前缀以和 JVM 反射区分。
 目标覆盖「KSP 能生成到哪」：JVM、Kotlin/JS、Kotlin/Wasm、Kotlin/Native。
 
-- 总计：74
-- 已完成：73
+- 总计：76
+- 已完成：75
 - 明确不做：1
 - 待完成：0
 
@@ -17,13 +17,12 @@
 
 ### 当前待办
 
-74 项已全部收敛（73 项完成、1 项明确不做）。剩下的都是 v0.2 候选，见
+76 项已全部收敛（75 项完成、1 项明确不做）。剩下的都是 v0.2 候选，见
 [technical-decisions.md](docs/development/technical-decisions.md) 末节：
 
 - [ ] Gradle 插件：把资源目录声明为 KSP 增量输入，按目标自动配置插件与选项
 - [ ] `androidTarget` 发布，让 Android 消费方拿到自己的变体
 - [ ] 代理支持具体属性（调用方提供存储）
-- [ ] 带调用方 `CoroutineScope` 的 `suspend` 调用
 - [ ] 同模块内父类型的递归反射
 - [ ] 交叉 native 目标（iOS 等）的发布矩阵
 

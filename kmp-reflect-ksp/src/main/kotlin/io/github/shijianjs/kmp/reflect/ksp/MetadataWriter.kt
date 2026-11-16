@@ -259,8 +259,16 @@ internal class MetadataWriter {
                 add("modifiers = ").modifierSet(function.modifiers).add(",\n")
                 add("annotations = ").annotationList(function.annotations).add(",\n")
                 add("isInvokable = %L,\n", function.invokable)
-                if (function.invokable) {
-                    add(
+                when {
+                    // A `suspend` function's lambda carries the `suspend` modifier itself, so the
+                    // runtime can call it from a coroutine and nowhere else.
+                    function.isSuspend && function.invokable -> add(
+                        "suspendInvoker = suspend { receiver, args -> (receiver as %T).%N(%L) },\n",
+                        ownerType(),
+                        function.name,
+                        callArguments(function.parameters),
+                    )
+                    function.invokable -> add(
                         "invoker = { receiver, args -> (receiver as %T).%N(%L) },\n",
                         ownerType(),
                         function.name,
