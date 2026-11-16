@@ -1,7 +1,8 @@
 package io.github.shijianjs.kmp.reflect.demo.page
 
+import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.ktjs.dom.element.inlineStyle
+import web.cssom.CSSStyleSheet
 import web.cssom.FontFamily
 import web.cssom.Margin
 import web.cssom.number
@@ -20,24 +21,16 @@ import web.html.HtmlTagName
  */
 internal class SectionShell {
     val root: HTMLElement = HtmlTagName.section.createElement {
-        inlineStyle.marginTop = 36.px
+        classList.add(SECTION_CLASS)
     }
 
     private val headingElement: HTMLHeadingElement = HtmlTagName.h2.createElement {
-        inlineStyle.apply {
-            margin = Margin(0.px, 0.px, 4.px)
-            fontSize = 19.px
-        }
+        classList.add(SECTION_HEADING_CLASS)
     }
 
     private val hintElement: HTMLParagraphElement = HtmlTagName.p.createElement {
         classList.add(HINT_CLASS)
-        inlineStyle.apply {
-            margin = Margin(0.px, 0.px, 14.px)
-            color = mutedText
-            fontSize = 13.px
-            lineHeight = number(1.5)
-        }
+        classList.add(SECTION_HINT_CLASS)
     }
 
     val body: HTMLDivElement = HtmlTagName.div.createElement()
@@ -52,6 +45,39 @@ internal class SectionShell {
     fun setCopy(heading: String, hint: String) {
         headingElement.textContent = heading
         hintElement.textContent = hint
+    }
+}
+
+/**
+ * The section shell's own rules.
+ *
+ * `.hint` is the shared part (colour, size, line height); the two margins belong to the two places a
+ * hint appears, which is why they are separate modifiers rather than one rule that everyone lives with.
+ */
+internal val SECTION_SHEET: CSSStyleSheet = cssSheet {
+    SECTION_CLASS {
+        marginTop = 36.px
+    }
+
+    SECTION_HEADING_CLASS {
+        margin = Margin(0.px, 0.px, 4.px)
+        fontSize = 19.px
+        color = bodyText
+    }
+
+    HINT_CLASS {
+        margin = Margin(0.px, 0.px)
+        color = mutedText
+        fontSize = 13.px
+        lineHeight = number(1.5)
+    }
+
+    SECTION_HINT_CLASS {
+        marginBottom = 14.px
+    }
+
+    DETAIL_HINT_CLASS {
+        marginBottom = 0.px
     }
 }
 

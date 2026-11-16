@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 83 |
-| 已完成 | 82 |
+| 总计 | 85 |
+| 已完成 | 84 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -182,6 +182,21 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 83 首页改 kit 版（`<ktjs-hero>` + `<ktjs-action>` + `<ktjs-features>` + `<ktjs-next-steps>`，中英各一份），
 `guide/platforms`（中英）加一张 mermaid 流程图，让 mermaid / d3-transition 这两项配置有真实用途
 
+### L. 样式规范改口径并回填 demo（2，2026-11-16 追加）
+
+84 `dev-agent-skills` 的 `ui-code-style` 由「优先内联」改成「静态 adopted sheet + class 为主、内联只给运行时
+值」，并写明这是为性能妥协：`SKILL.md` 的 description、主线第 3 条、判定表第 2 行、第三节整节（三层表 +
+一对多论证 + 9 条纪律）、第四节「内联 vs sheet：边界与例外」（4 条硬约束，禁 `cssText`）、第七节对照表
+拆「静态规则（默认）/ 动态值（例外）」、第八节清单 4 条、第九节新增两条禁止；`references/styling.md` 第 1/2/
+3/4/6 节重写（第 2 节补「无 shadow root 的页面」`installPageStyle(vararg)` 示例、第 4 节改成 7 步迁移）；
+`references/elements.md` 样式行拆静态/动态两行；`README.md` 技能表同步
+85 kmp-reflect demo 应用新口径：`Theme.kt` 重写为「12 个调色板 + 30 个 class 常量 + 只剩 reset 与 `.page`
+的 `PAGE_SHEET` + `installPageStyle(vararg CSSStyleSheet)`」，静态规则按区块落到各自的 `HEADER_SHEET` /
+`SECTION_SHEET` / `OUTPUT_SHEET` / `BROWSER_SHEET` / `RESOURCES_SHEET`，节点只带 class；两态改 class 切换
+（`.row.is-selected`、`.badge-ok` / `.badge-muted`）；`ProxySection` 的 `<p class="output">` 改用
+`OutputList` 统一成 `ul.output`；`DemoPage.mount()` 一次性 adopt 五份 sheet。`.agents/skills/ui-code-style`
+副本与源仓库同步，`AGENTS.md` 的「演示与文档」三条约定按新口径重写
+
 验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution` 通过；`:demo:e2eTest` 6 个用例、18 项断言全绿
 （`h1.title`、`tr.row`、`.detail .member`、`.output`、`img.thumb`、`.lang-switch`、`.page` 与新页面对得上，
 `fun greet(` / `val greeting` / `Hello, Ada!` / `proxy(greet) -> world` / `name=person` / `config.json`
@@ -200,6 +215,16 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 包一层等于放弃检查）；语言切换按钮原本用 UA 的 `buttontext` 黑色，深色底上看不见，改为在 `PAGE_SHEET`
 里给 `color` / `backgroundColor` / `borderColor` 基础值（连同 hover 一起留在 sheet，避免内联压过
 `:hover`）。实测按钮常态 `rgb(154,163,175)`、hover 边框与文字都变 `rgb(110,168,254)`。
+85 的验证：`:demo:compileKotlinJs`、`:demo:detekt`（0 findings）、`:demo:jsBrowserDistribution` 通过；
+`:demo:e2eTest` 6 个用例、18 项断言全绿（选择器契约与文案全部保留，`ProxySection` 从 `p.output` 换成
+`ul.output` 后 `.output` 断言仍然命中）。Playwright 实测生产产物：`document.querySelectorAll("[style]")`
+只剩 1 个节点（`<body>` 的首屏底色，单节点、不是 N 份重复），`table.outerHTML` 已是
+`<table class="class-table">` + `<th class="cell cell-head">`；`document.adoptedStyleSheets` 共 6 份
+（PAGE + 五个区块），规则数与源码逐条对应；`.lang-switch` 常态 `rgb(154,163,175)`、hover 文字与边框
+`rgb(110,168,254)`；选中行背景 `rgba(110,168,254,0.12)`、徽标 `rgba(74,222,128,0.12)`；`td` padding
+`9px 12px`、`th` 字重 `600`、`h2` 19px、`.section-hint` 的 `margin-bottom` 14px（`.hint` 与
+`.section-hint` 同特异性靠后声明覆盖的顺序假设成立）；中英首屏与选中态截图核对，无 console error、
+无失败请求。
 
 ## 明确不做
 

@@ -1,8 +1,12 @@
 package io.github.shijianjs.kmp.reflect.demo.page
 
+import io.github.shijianjs.ktjs.dom.css.cssSheet
+import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
+import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import web.cssom.AlignItems
+import web.cssom.Border
+import web.cssom.CSSStyleSheet
 import web.cssom.Cursor
 import web.cssom.Display
 import web.cssom.FlexWrap
@@ -34,38 +38,15 @@ import web.html.HtmlTagName
 internal class HeaderBar(private val onSwitch: () -> Unit) {
     private val titleElement: HTMLHeadingElement = HtmlTagName.h1.createElement {
         classList.add(TITLE_CLASS)
-        inlineStyle.apply {
-            margin = Margin(0.px, 0.px)
-            fontSize = 30.px
-            letterSpacing = (-0.02).em
-        }
     }
 
     private val subtitleElement: HTMLParagraphElement = HtmlTagName.p.createElement {
         classList.add(SUBTITLE_CLASS)
-        inlineStyle.apply {
-            margin = Margin(6.px, 0.px, 0.px)
-            color = mutedText
-            fontSize = 14.px
-            lineHeight = number(1.55)
-            maxWidth = 62.pct
-        }
     }
 
     private val switchButton: HTMLButtonElement = HtmlTagName.button.createElement {
         classList.add(LANG_CLASS)
         type = ButtonType.button
-        inlineStyle.apply {
-            // Border colour, text colour and the background they sit on change on hover, so all three
-            // live in PAGE_SHEET; everything else is inline.
-            padding = Padding(6.px, 14.px)
-            borderWidth = 1.px
-            borderStyle = LineStyle.solid
-            borderRadius = 999.px
-            fontSize = 12.px
-            fontWeight = FontWeight.bold
-            cursor = Cursor.pointer
-        }
         onclick = EventHandler { onSwitch() }
     }
 
@@ -76,17 +57,6 @@ internal class HeaderBar(private val onSwitch: () -> Unit) {
 
     val root: HTMLElement = HtmlTagName.div.createElement {
         classList.add(HEADER_CLASS)
-        inlineStyle.apply {
-            display = Display.flex
-            alignItems = AlignItems.flexStart
-            justifyContent = JustifyContent.spaceBetween
-            rowGap = 0.75.rem
-            flexWrap = FlexWrap.wrap
-            paddingBottom = 20.px
-            borderBottomWidth = 1.px
-            borderBottomStyle = LineStyle.solid
-            borderBottomColor = hairline
-        }
         appendChild(titles)
         appendChild(switchButton)
     }
@@ -95,5 +65,57 @@ internal class HeaderBar(private val onSwitch: () -> Unit) {
         titleElement.textContent = copy.title
         subtitleElement.textContent = copy.subtitle
         switchButton.textContent = copy.switchLabel
+    }
+}
+
+/**
+ * The header's own rules.
+ *
+ * The button's background, border and text colour live here rather than inline: a `<button>` otherwise
+ * keeps the UA's `buttontext` colour (invisible on this background), and an inline colour would win
+ * over the `:hover` rule below.
+ */
+internal val HEADER_SHEET: CSSStyleSheet = cssSheet {
+    HEADER_CLASS {
+        display = Display.flex
+        alignItems = AlignItems.flexStart
+        justifyContent = JustifyContent.spaceBetween
+        rowGap = 0.75.rem
+        flexWrap = FlexWrap.wrap
+        paddingBottom = 20.px
+        borderBottomWidth = 1.px
+        borderBottomStyle = LineStyle.solid
+        borderBottomColor = hairline
+    }
+
+    TITLE_CLASS {
+        margin = Margin(0.px, 0.px)
+        fontSize = 30.px
+        letterSpacing = (-0.02).em
+        color = bodyText
+    }
+
+    SUBTITLE_CLASS {
+        margin = Margin(6.px, 0.px, 0.px)
+        color = mutedText
+        fontSize = 14.px
+        lineHeight = number(1.55)
+        maxWidth = 62.pct
+    }
+
+    LANG_CLASS {
+        padding = Padding(6.px, 14.px)
+        backgroundColor = panel
+        border = Border(1.px, LineStyle.solid, hairline)
+        borderRadius = 999.px
+        color = mutedText
+        fontSize = 12.px
+        fontWeight = FontWeight.bold
+        cursor = Cursor.pointer
+
+        Pseudos.hover {
+            borderColor = accent
+            color = accent
+        }
     }
 }

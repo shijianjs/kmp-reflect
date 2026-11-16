@@ -63,14 +63,19 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 - 页面写法按 `.agents/skills/ui-code-style`：节点用 `TagName<T>.createElement { }` 建、用字段持有，
   状态变化只改相关节点（`applyCopy` / `toggleSelection`），**不要**引入 `render()` 式整页重绘；
   语言切换走各区块的 `applyCopy`，不重建 DOM。
-- 样式内联（`inlineStyle` + `rgb(...)`），只有内联表达不了的规则（`:hover`、`box-sizing` reset）放在
-  `Theme.kt` 的 `PAGE_SHEET`，由 `installPageStyle()` 挂到 `document.adoptedStyleSheets`。**不要**再
-  新增 `demo.css` 之类的集中式样式表。
+- **静态样式进 sheet，内联只留给运行时值**：每个区块自己有一份 `X_SHEET`（`HEADER_SHEET`、
+  `SECTION_SHEET`、`OUTPUT_SHEET`、`BROWSER_SHEET`、`RESOURCES_SHEET`），节点只带 class；
+  `installPageStyle(HEADER_SHEET, …)` 一次性 adopt 到 `document.adoptedStyleSheets`（`PAGE_SHEET` 只留
+  `box-sizing` reset 和 `.page` 本身）。`inlineStyle` 只用于运行时才知道、会频繁变的那一两个属性。
+  理由是性能：样式与 DOM 实例是一对多，一条 class 规则覆盖所有同类节点，内联则是 N 份文本 + N 次解析。
 - 每个 class 标记都是 `Theme.kt` 里的一条 `internal val X_CLASS: ClassName`，调用点写
   `classList.add(X_CLASS)`。**不要**加 `addClass("row")` 这类把字符串透传一层的包装（`classList.add`
   本来就只吃 `ClassName`，包一层反而让拼错的类名照样编译）。
-- 会随 `:hover` 变的属性（背景、边框色、文字色）一律留在 `PAGE_SHEET`，不能内联，否则内联优先级会盖掉
-  hover 规则。`<button>` 这类 UA 自带 `buttontext` 颜色的控件必须显式给 `color`，否则在深色底上看不见。
+- 会随 `:hover` 变的属性（背景、边框色、文字色）必须在 sheet 里（内联优先级更高，会盖掉 hover 规则）。
+  `<button>` 这类 UA 自带 `buttontext` 颜色的控件必须显式给 `color`，否则在深色底上看不见。
+- 有限枚举的状态（选中行、invokable 徽标）用 class 切换（`.row.is-selected`、`.badge-ok`），不要内联颜色；
+  `:hover` 与选中态同时存在时，选中规则写在 hover 规则**之后**，靠同特异性下的先后顺序生效。
+- **不要**再新增 `demo.css` 之类的集中式样式表：规则跟着组件走，sheet 只是同一文件里的一个常量。
 - 文档站点的“全功能”配置是一套，别砍：`docs/build.gradle.kts` 的 `kitBundle` / `extractKitBundle` /
   `clientModuleFunction` / `browserBundle(-Files)`、`docs/.../docs/ClientModule.kt`、
   `Config.kt` 里的 `clientModules` / `themes` / `markdown.mermaid` / `themeConfig.mermaid`。首页是

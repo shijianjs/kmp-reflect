@@ -1,16 +1,17 @@
 package io.github.shijianjs.kmp.reflect.demo.page
 
+import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.ktjs.dom.element.inlineStyle
 import io.github.shijianjs.kmp.reflect.resource.KmpResource
 import io.github.shijianjs.kmp.reflect.resource.KmpResources
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import web.cssom.Border
+import web.cssom.CSSStyleSheet
 import web.cssom.Cursor
 import web.cssom.Display
 import web.cssom.LineStyle
 import web.cssom.Margin
-import web.cssom.Padding
 import web.cssom.number
 import web.cssom.px
 import web.html.HTMLImageElement
@@ -30,22 +31,14 @@ internal class ResourcesSection {
 
     val root: HTMLElement = shell.root
 
-    private val list = HtmlTagName.ul.createElement {
-        classList.add(OUTPUT_CLASS)
-        inlineStyle.apply {
-            margin = Margin(0.px, 0.px)
-            padding = Padding(0.px, 0.px, 0.px, 18.px)
-            fontSize = 13.px
-            lineHeight = number(1.6)
-        }
-    }
+    private val list = OutputList()
 
     private val entries: List<Entry>
 
     init {
         entries = KmpResources.all().sortedBy { resource -> resource.path }.map(::entryOf)
-        entries.forEach { entry -> list.appendChild(entry.item) }
-        shell.body.appendChild(list)
+        entries.forEach { entry -> list.element.appendChild(entry.item) }
+        shell.body.appendChild(list.element)
         applyCopy(english)
     }
 
@@ -62,11 +55,11 @@ internal class ResourcesSection {
 
     private fun entryOf(resource: KmpResource): Entry {
         val label = HtmlTagName.span.createElement {
-            inlineStyle.fontFamily = codeFamily
+            classList.add(CODE_CLASS)
         }
         val item = HtmlTagName.li.createElement {
+            classList.add(OUTPUT_ITEM_CLASS)
             classList.add(RESOURCE_CLASS)
-            inlineStyle.marginBottom = 6.px
             appendChild(label)
             if (resource.mimeType.startsWith("image/")) {
                 appendChild(imageFor(resource))
@@ -74,12 +67,7 @@ internal class ResourcesSection {
                 appendChild(
                     HtmlTagName.p.createElement {
                         classList.add(PREVIEW_CLASS)
-                        inlineStyle.apply {
-                            margin = Margin(4.px, 0.px, 0.px)
-                            color = mutedText
-                            fontSize = 12.px
-                            fontFamily = codeFamily
-                        }
+                        classList.add(CODE_CLASS)
                         textContent = resource.text().lines().take(3).joinToString(" / ").trim()
                     },
                 )
@@ -93,15 +81,28 @@ internal class ResourcesSection {
             classList.add(THUMB_CLASS)
             alt = resource.fileName
             src = "data:${resource.mimeType};base64,${Base64.encode(resource.bytes)}"
-            inlineStyle.apply {
-                display = Display.block
-                marginTop = 8.px
-                maxWidth = 48.px
-                borderRadius = 6.px
-                borderWidth = 1.px
-                borderStyle = LineStyle.solid
-                borderColor = hairline
-                cursor = Cursor.default
-            }
         }
+}
+
+/** The resources section's own rules: the label is code, the preview is code and muted, the thumb is framed. */
+internal val RESOURCES_SHEET: CSSStyleSheet = cssSheet {
+    RESOURCE_CLASS {
+        marginBottom = 6.px
+    }
+
+    PREVIEW_CLASS {
+        margin = Margin(4.px, 0.px, 0.px)
+        color = mutedText
+        fontSize = 12.px
+        lineHeight = number(1.5)
+    }
+
+    THUMB_CLASS {
+        display = Display.block
+        marginTop = 8.px
+        maxWidth = 48.px
+        border = Border(1.px, LineStyle.solid, hairline)
+        borderRadius = 6.px
+        cursor = Cursor.default
+    }
 }

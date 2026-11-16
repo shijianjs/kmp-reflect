@@ -1,12 +1,15 @@
 package io.github.shijianjs.kmp.reflect.demo.page
 
+import io.github.shijianjs.ktjs.dom.css.cssSheet
+import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
+import io.github.shijianjs.ktjs.dom.css.dsl.invoke
+import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
-import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.ktjs.dom.element.inlineStyle
+import web.cssom.Border
 import web.cssom.BorderCollapse
+import web.cssom.CSSStyleSheet
 import web.cssom.Cursor
-import web.cssom.FontFamily
 import web.cssom.LineStyle
 import web.cssom.Margin
 import web.cssom.Overflow
@@ -39,7 +42,8 @@ private class ClassRow(
  *
  * Rows are built once from the registered metadata; a click toggles the selected class, which repaints
  * two rows and the detail panel — nothing else on the page is rebuilt, and switching languages only
- * re-labels the header and re-draws the detail.
+ * re-labels the header and re-draws the detail. Every rule these nodes obey is in [BROWSER_SHEET]: the
+ * nodes carry classes, not copies of the same declarations.
  */
 internal class ClassBrowser {
     private val shell = SectionShell()
@@ -53,43 +57,19 @@ internal class ClassBrowser {
     private val bodyRows: HTMLTableSectionElement = HtmlTagName.tbody.createElement()
 
     private val table: HTMLTableElement = HtmlTagName.table.createElement {
-        inlineStyle.apply {
-            width = 100.pct
-            borderCollapse = BorderCollapse.collapse
-            backgroundColor = panel
-            borderWidth = 1.px
-            borderStyle = LineStyle.solid
-            borderColor = hairline
-            borderRadius = 10.px
-            overflow = Overflow.hidden
-            fontSize = 13.px
-        }
+        classList.add(TABLE_CLASS)
         appendChild(HtmlTagName.thead.createElement { appendChild(headRow) })
         appendChild(bodyRows)
     }
 
     private val heading: HTMLHeadingElement = HtmlTagName.h3.createElement {
-        inlineStyle.apply {
-            margin = Margin(0.px, 0.px, 8.px)
-            fontSize = 15.px
-            fontWeight = integer(600)
-            color = mutedText
-        }
+        classList.add(DETAIL_HEADING_CLASS)
     }
 
     private val detailBody: HTMLDivElement = HtmlTagName.div.createElement()
 
     private val detailPanel: HTMLDivElement = HtmlTagName.div.createElement {
         classList.add(DETAIL_CLASS)
-        inlineStyle.apply {
-            marginTop = 14.px
-            padding = Padding(14.px, 16.px)
-            backgroundColor = panel
-            borderWidth = 1.px
-            borderStyle = LineStyle.solid
-            borderColor = hairline
-            borderRadius = 10.px
-        }
         appendChild(heading)
         appendChild(detailBody)
     }
@@ -104,7 +84,6 @@ internal class ClassBrowser {
             val annotations = cell()
             val row = HtmlTagName.tr.createElement {
                 classList.add(ROW_CLASS)
-                inlineStyle.cursor = Cursor.pointer
                 appendChild(cell(kmpClass.qualifiedName, monospace = true))
                 appendChild(cell(kmpClass.kind.name.lowercase()))
                 appendChild(members)
@@ -163,7 +142,7 @@ internal class ClassBrowser {
             detailBody.replaceChildren(
                 HtmlTagName.p.createElement {
                     classList.add(HINT_CLASS)
-                    inlineStyle.color = mutedText
+                    classList.add(DETAIL_HINT_CLASS)
                     textContent = copy.detailEmpty
                 },
             )
@@ -171,12 +150,7 @@ internal class ClassBrowser {
         }
 
         val list = HtmlTagName.ul.createElement {
-            classList.add(MEMBER_CLASS)
-            inlineStyle.apply {
-                margin = Margin(0.px, 0.px)
-                paddingLeft = 18.px
-                fontSize = 13.px
-            }
+            classList.add(MEMBER_LIST_CLASS)
         }
         kmpClass.functions.forEach { function ->
             list.appendChild(
@@ -205,21 +179,13 @@ internal class ClassBrowser {
     private fun memberLine(label: String, invokable: Boolean): HTMLElement =
         HtmlTagName.li.createElement {
             classList.add(MEMBER_CLASS)
-            inlineStyle.apply {
-                fontFamily = codeFamily
-                marginBottom = 2.px
-            }
+            classList.add(CODE_CLASS)
             textContent = label
             appendChild(
                 HtmlTagName.span.createElement {
-                    inlineStyle.apply {
-                        marginLeft = 8.px
-                        padding = Padding(1.px, 7.px)
-                        borderRadius = 999.px
-                        fontSize = 11.px
-                        backgroundColor = if (invokable) okFill else mutedFill
-                        color = if (invokable) okText else mutedText
-                    }
+                    classList.add(BADGE_CLASS)
+                    // Two states, two classes: the colour is static, so nothing here is inline.
+                    classList.add(if (invokable) BADGE_OK_CLASS else BADGE_MUTED_CLASS)
                     textContent = if (invokable) copy.invokable else copy.notInvokable
                 },
             )
@@ -227,33 +193,105 @@ internal class ClassBrowser {
 
     private fun headerCell(label: String): HTMLTableCellElement =
         HtmlTagName.th.createElement {
-            styleCell()
-            inlineStyle.apply {
-                backgroundColor = panelStrong
-                color = mutedText
-                fontWeight = integer(600)
-            }
+            classList.add(CELL_CLASS)
+            classList.add(HEAD_CELL_CLASS)
             textContent = label
         }
 
     private fun cell(value: String = "", monospace: Boolean = false): HTMLTableCellElement =
         HtmlTagName.td.createElement {
-            styleCell()
+            classList.add(CELL_CLASS)
             if (monospace) {
-                inlineStyle.fontFamily = codeFamily
+                classList.add(CODE_CLASS)
             }
             textContent = value
         }
+}
 
-    private fun HTMLTableCellElement.styleCell() {
-        inlineStyle.apply {
-            textAlign = TextAlign.left
-            verticalAlign = VerticalAlign.top
-            padding = Padding(9.px, 12.px)
-            borderBottomWidth = 1.px
-            borderBottomStyle = LineStyle.solid
-            borderBottomColor = hairline
-            lineHeight = number(1.5)
-        }
+/**
+ * The browser's own rules.
+ *
+ * `.row.is-selected` is the one compound selector in the page: CSS has no typed way to join two
+ * `ClassName`s, so it is spelled once here, next to the two tokens it is made of.
+ */
+internal val BROWSER_SHEET: CSSStyleSheet = cssSheet {
+    TABLE_CLASS {
+        width = 100.pct
+        borderCollapse = BorderCollapse.collapse
+        backgroundColor = panel
+        border = Border(1.px, LineStyle.solid, hairline)
+        borderRadius = 10.px
+        overflow = Overflow.hidden
+        fontSize = 13.px
+    }
+
+    CELL_CLASS {
+        textAlign = TextAlign.left
+        verticalAlign = VerticalAlign.top
+        padding = Padding(9.px, 12.px)
+        borderBottomWidth = 1.px
+        borderBottomStyle = LineStyle.solid
+        borderBottomColor = hairline
+        lineHeight = number(1.5)
+    }
+
+    HEAD_CELL_CLASS {
+        backgroundColor = panelStrong
+        color = mutedText
+        fontWeight = integer(600)
+    }
+
+    CODE_CLASS {
+        fontFamily = codeFamily
+    }
+
+    ROW_CLASS {
+        cursor = Cursor.pointer
+
+        Pseudos.hover { backgroundColor = panelStrong }
+    }
+
+    ".row.is-selected" { backgroundColor = selectedFill }
+
+    DETAIL_CLASS {
+        marginTop = 14.px
+        padding = Padding(14.px, 16.px)
+        backgroundColor = panel
+        border = Border(1.px, LineStyle.solid, hairline)
+        borderRadius = 10.px
+    }
+
+    DETAIL_HEADING_CLASS {
+        margin = Margin(0.px, 0.px, 8.px)
+        fontSize = 15.px
+        fontWeight = integer(600)
+        color = mutedText
+    }
+
+    MEMBER_LIST_CLASS {
+        margin = Margin(0.px, 0.px)
+        paddingLeft = 18.px
+        fontSize = 13.px
+    }
+
+    MEMBER_CLASS {
+        marginBottom = 2.px
+    }
+
+    BADGE_CLASS {
+        marginLeft = 8.px
+        padding = Padding(1.px, 7.px)
+        borderRadius = 999.px
+        fontSize = 11.px
+    }
+
+    BADGE_OK_CLASS {
+        backgroundColor = okFill
+        color = okText
+    }
+
+    BADGE_MUTED_CLASS {
+        backgroundColor = mutedFill
+        color = mutedText
     }
 }
