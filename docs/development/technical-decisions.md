@@ -21,6 +21,9 @@
 - Android 现在由 JVM 产物覆盖（没有 `androidTarget` 发布），所以运行库不许碰 JDK 专属 API。
 - core 仍是纯 Kotlin，唯一的平台差异在 `PlatformReflection`：JVM 返回全限定名、Native 返回简单名、
   JS/Wasm 返回 `null`。reified 查找据此退化，字符串查找在所有平台一致。
+- **Wasm 目标只声明 `nodejs()`，不声明 `binaries.library()`**：消费方编译时用的是 klib，链接 wasm 二进制
+  对库毫无价值，却会让每个 `build` 依赖 Gradle 从 GitHub releases 下载 binaryen（KGP 的
+  `kotlinWasmBinaryenSetup`）。在没有该二进制的网络上，`./gradlew build` 会直接失败。
 
 ## 3. 元数据形态：编译期内联
 

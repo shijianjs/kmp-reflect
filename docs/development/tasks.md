@@ -142,7 +142,9 @@ Wasm，原先「只做 JVM + JS」的边界因此作废）。
 74 CI 增加 `~/.konan` 缓存（Linux runner 现在要构建 `linuxX64`，没有缓存每次都要下 native 工具链）
 
 验证：`:demo:reflectionTest`（JVM）、`:demo:jsBrowserTest`、`:demo:wasmJsNodeTest`、`:demo:mingwX64Test`
-四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过。
+四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过（31s，含 detekt）。
+CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNodeTest` 均通过，`build` 2m10s，
+`pagesSite` 27s，`:demo:e2eTest` 15s；konan 缓存首次为冷未命中（符合预期，第二次起命中）。
 
 ## 明确不做
 
