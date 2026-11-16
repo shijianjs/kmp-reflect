@@ -51,7 +51,7 @@ jobs:
       # The Kotlin/Native distribution is a ~500 MB download per host that Gradle does not cache;
       # the key follows the Kotlin version, because the distribution is tied to it.
       - name: Cache the Kotlin/Native toolchain
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: konan-${{ matrix.os }}-2.4.21
@@ -81,7 +81,7 @@ jobs:
         uses: ./.github/actions/gradle-setup
 
       - name: Cache the Kotlin/Native toolchain
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.konan
           key: konan-ubuntu-latest-2.4.21
