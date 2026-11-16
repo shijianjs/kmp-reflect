@@ -16,31 +16,75 @@ concurrency:
 permissions:
   contents: read
 
+# The official Kotlin Multiplatform CI guidance (kotlinlang.org/docs/multiplatform/
+# github-actions-for-kmp.html): no daemon, parallel execution and the Gradle build cache. The heap
+# cap is explicit because three jobs now compile four backends each, including a native target.
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096M -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+
 jobs:
-  test:
-    name: Build and test
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+  # The library claims "every backend KSP can generate into", so the point of CI is to build on the
+  # host of each backend rather than trust one runner: Linux links linuxX64, macOS links macosArm64,
+  # Windows links mingwX64. Each job runs the metadata assertions on its own native target plus
+  # JVM/JS/Wasm, which is exactly what `docs/guide/platforms.md` promises. Browser tests are left to
+  # the `browser-and-site` job, where Chromium is set up once.
+  verify:
+    name: Verify on ${{ matrix.host }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            host: Linux (linuxX64)
+          - os: macos-latest
+            host: macOS (macosArm64)
+          - os: windows-latest
+            host: Windows (mingwX64)
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up JDK
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "21"
+      - name: Gradle setup
+        uses: ./.github/actions/gradle-setup
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      # Kotlin/Native is now one of the targets (linuxX64 on this runner), and its toolchain is a
-      # separate ~500 MB download that Gradle does not cache. The key follows the Kotlin version,
-      # because the distribution is tied to it.
+      # The Kotlin/Native distribution is a ~500 MB download per host that Gradle does not cache;
+      # the key follows the Kotlin version, because the distribution is tied to it.
       - name: Cache the Kotlin/Native toolchain
         uses: actions/cache@v5
         with:
           path: ~/.konan
-          key: konan-${{ runner.os }}-2.4.21
+          key: konan-${{ matrix.os }}-2.4.21
+
+      - name: Build and test the host's targets
+        run: ./gradlew build -x :demo:jsBrowserTest --stacktrace
+        shell: bash
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: "**/build/reports/tests/**"
+          if-no-files-found: ignore
+
+  # Browser suites and the artifact the Pages workflow publishes. Ubuntu only: Playwright's Chromium
+  # and the docs toolchain are set up once here, and the matrix already proved the other hosts.
+  browser-and-site:
+    name: Browser tests and Pages site
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Gradle setup
+        uses: ./.github/actions/gradle-setup
+
+      - name: Cache the Kotlin/Native toolchain
+        uses: actions/cache@v5
+        with:
+          path: ~/.konan
+          key: konan-ubuntu-latest-2.4.21
 
       - name: Install browser test dependencies
         run: npx --yes playwright install-deps chromium
@@ -49,16 +93,13 @@ jobs:
         if: github.actor == 'dependabot[bot]'
         run: ./gradlew kotlinUpgradePackageLock
 
-      - name: Build and test
-        run: ./gradlew build --stacktrace
+      - name: Test the demo page in a browser
+        run: ./gradlew :demo:jsBrowserTest :demo:e2eTest --stacktrace
 
       # Validates the demo bundle, the docs site and the Dokka reference that the Pages workflow
       # deploys.
       - name: Assemble Pages site
         run: ./gradlew pagesSite
-
-      - name: Test the demo page
-        run: ./gradlew :demo:e2eTest
 
       - name: Upload refreshed npm lock file
         if: github.actor == 'dependabot[bot]'
@@ -71,7 +112,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: test-reports
+          name: test-reports-web
           path: |
             "**/build/reports/tests/**"
             demo/build/e2e-results/**

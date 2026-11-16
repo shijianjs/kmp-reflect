@@ -1,0 +1,17 @@
+name: gradle-setup
+description: Setup Java and Gradle for every job, so no job can drift from the others.
+
+# One place for the JDK and the Gradle distribution. Matrix jobs (`Verify` runs on Linux, macOS and
+# Windows) use this too: Kotlin/Native compiles on the build host, so the host itself is what has to
+# be identical between jobs, not the toolchain version.
+runs:
+  using: composite
+  steps:
+    - name: Setup Java
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v6
