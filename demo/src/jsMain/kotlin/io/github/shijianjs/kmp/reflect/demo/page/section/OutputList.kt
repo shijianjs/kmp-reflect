@@ -1,7 +1,9 @@
-package io.github.shijianjs.kmp.reflect.demo.page
+package io.github.shijianjs.kmp.reflect.demo.page.section
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_ITEM_CLASS
 import web.cssom.CSSStyleSheet
 import web.cssom.Margin
 import web.cssom.Padding
@@ -11,10 +13,11 @@ import web.html.HTMLElement
 import web.html.HtmlTagName
 
 /**
- * A list of plain lines, all of which change together when the language does.
+ * A list of plain lines, which is the whole body of most sections.
  *
- * The list is one local collection whose whole content is language-dependent, so replacing its
- * children is the intended update: no line survives a copy change, and nothing above it is touched.
+ * Every line of these lists comes from one language, so a copy change replaces the collection
+ * wholesale — that is the case `replaceChildren` is for. The nodes themselves are the section's own;
+ * nothing above them is touched.
  */
 internal class OutputList {
     val element: HTMLElement = HtmlTagName.ul.createElement {
@@ -32,7 +35,13 @@ internal class OutputList {
     }
 }
 
-/** The rules of the output list: one rule per node kind, however many lines the list ends up with. */
+/**
+ * The rules of any output list, adopted by every section whose body is one.
+ *
+ * The list is the same shape everywhere, and it must look the same everywhere — that is the promise
+ * this shared sheet makes. A section with more than a list (the class browser, the resources) adds its
+ * own rules on top instead of copying these.
+ */
 internal val OUTPUT_SHEET: CSSStyleSheet = cssSheet {
     OUTPUT_CLASS {
         margin = Margin(0.px, 0.px)

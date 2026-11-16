@@ -9,6 +9,8 @@
 </head>
 <body style="margin: 0; background: #0f1115; color: #e5e7eb">
 <noscript>This demo is written in Kotlin/JS and needs JavaScript enabled.</noscript>
-<div id="demo" class="page"></div>
+<!-- The page is a custom element like everything inside it; `class="page"` is the hook the browser
+     suite asserts on. It upgrades when demo.js defines the tag, and renders itself into its shadow. -->
+<kmp-demo-page id="demo" class="page"></kmp-demo-page>
 </body>
 </html>

@@ -1,64 +1,91 @@
 package io.github.shijianjs.kmp.reflect.demo.page
 
-import web.html.HTMLElement
+import io.github.shijianjs.ktjs.dom.css.cssSheet
+import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
+import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.kmp.reflect.demo.page.header.headerBarTag
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Lang
+import io.github.shijianjs.kmp.reflect.demo.page.lang.copyOf
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.annotationSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.enumSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.invocationSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.limitationsSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.nestedSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.proxySectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.resourcesSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
+import io.github.shijianjs.kmp.reflect.demo.page.theme.bodyText
+import io.github.shijianjs.kmp.reflect.demo.page.theme.pageBackground
+import web.components.CustomElementReference
+import web.cssom.Auto
+import web.cssom.CSSStyleSheet
+import web.cssom.Display
+import web.cssom.FontFamily
+import web.cssom.Margin
+import web.cssom.Padding
+import web.cssom.number
+import web.cssom.px
+import web.cssom.rem
+import web.dom.TagName
 
 /**
- * The page: one header, eight sections, and the language switch that re-labels them in place.
+ * `<kmp-demo-page>`: one header, eight sections, and the language switch that re-labels them in place.
  *
- * Every section is built once in its own class; switching languages walks the sections and calls
- * their `applyCopy`, so no node is recreated and no metadata is re-read. The page owns no rules of its
- * own beyond [PAGE_CLASS] (which `index.html` already puts on the mount point); mounting only adopts
- * the sections' sheets, once, for the whole document.
+ * Every section is its own custom element with its own shadow root and its own sheet; this element
+ * only composes them, owns the current language, and walks the sections with `applyCopy` when it
+ * changes. No node is recreated and no metadata is re-read on a switch.
  */
-internal class DemoPage(private val host: HTMLElement) {
-    private val header = HeaderBar(onSwitch = ::toggleLanguage)
+internal class DemoPage : CustomElementAdapter() {
+    private val header = headerBarTag().createElement()
 
-    private val browser = ClassBrowser()
+    private val browser = classBrowserTag().createElement()
 
-    private val invocation = InvocationSection()
+    private val invocation = invocationSectionTag().createElement()
 
-    private val proxy = ProxySection()
+    private val proxy = proxySectionTag().createElement()
 
-    private val resources = ResourcesSection()
+    private val resources = resourcesSectionTag().createElement()
 
-    private val annotations = AnnotationSection()
+    private val annotations = annotationSectionTag().createElement()
 
-    private val enums = EnumSection()
+    private val enums = enumSectionTag().createElement()
 
-    private val nested = NestedSection()
+    private val nested = nestedSectionTag().createElement()
 
-    private val limitations = LimitationsSection()
+    private val limitations = limitationsSectionTag().createElement()
 
-    private var lang: Lang = Lang.EN
+    /** The page's language; named `currentLang` because `HTMLElement` already owns `lang`. */
+    private var currentLang: Lang = Lang.EN
 
-    fun mount() {
-        installPageStyle(
-            HEADER_SHEET,
-            SECTION_SHEET,
-            OUTPUT_SHEET,
-            BROWSER_SHEET,
-            RESOURCES_SHEET,
-        )
-        if (!host.classList.contains(PAGE_CLASS)) {
-            host.classList.add(PAGE_CLASS)
-        }
-        host.replaceChildren(
-            header.root,
-            browser.root,
-            invocation.root,
-            proxy.root,
-            resources.root,
-            annotations.root,
-            enums.root,
-            nested.root,
-            limitations.root,
-        )
-        applyCopy(copyOf(lang))
+    init {
+        // The header reports the click; the page owns what it means. Handing over the callback keeps
+        // the component unaware of its parent.
+        header.onSwitch = ::toggleLanguage
+
+        // The host is the page: its own sheet carries the page box, the reset gives it a block display.
+        val shadow = attachStyledShadow(RESET, PAGE_SHEET)
+        shadow.appendChild(header)
+        shadow.appendChild(browser)
+        shadow.appendChild(invocation)
+        shadow.appendChild(proxy)
+        shadow.appendChild(resources)
+        shadow.appendChild(annotations)
+        shadow.appendChild(enums)
+        shadow.appendChild(nested)
+        shadow.appendChild(limitations)
+    }
+
+    override fun connectedCallback() {
+        applyCopy(copyOf(currentLang))
     }
 
     private fun toggleLanguage() {
-        lang = if (lang == Lang.EN) Lang.ZH else Lang.EN
-        applyCopy(copyOf(lang))
+        currentLang = if (currentLang == Lang.EN) Lang.ZH else Lang.EN
+        applyCopy(copyOf(currentLang))
     }
 
     private fun applyCopy(copy: Copy) {
@@ -72,4 +99,35 @@ internal class DemoPage(private val host: HTMLElement) {
         nested.applyCopy(copy)
         limitations.applyCopy(copy)
     }
+
+    companion object : CustomElementReference<DemoPage>(DemoPage::class.js) {
+        val NAME: TagName<DemoPage> = TagName("kmp-demo-page")
+
+        /**
+         * The page's own rules.
+         *
+         * Everything here is on `:host`, because a shadow tree is not laid out by the page's
+         * light-DOM rules: the host is the box the document sees, and the inherited properties
+         * (`color`, font, size) reach into the shadow trees from it.
+         */
+        private val PAGE_SHEET: CSSStyleSheet = cssSheet {
+            ":host" {
+                display = Display.block
+                maxWidth = 62.rem
+                margin = Margin(0.px, Auto.auto)
+                padding = Padding(32.px, 24.px, 64.px)
+                backgroundColor = pageBackground
+                color = bodyText
+                fontFamily = FontFamily.systemUi
+                fontSize = 15.px
+                lineHeight = number(1.55)
+            }
+        }
+    }
+}
+
+/** Defines `<kmp-demo-page>` once and returns its tag. */
+internal fun demoPageTag(): TagName<DemoPage> {
+    defineIfMissing(DemoPage.NAME, DemoPage.Companion)
+    return DemoPage.NAME
 }

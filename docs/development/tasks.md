@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 85 |
-| 已完成 | 84 |
+| 总计 | 86 |
+| 已完成 | 85 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -197,6 +197,19 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 `OutputList` 统一成 `ul.output`；`DemoPage.mount()` 一次性 adopt 五份 sheet。`.agents/skills/ui-code-style`
 副本与源仓库同步，`AGENTS.md` 的「演示与文档」三条约定按新口径重写
 
+### M. demo 改成标准 Web Component + 层级包（1，2026-11-17 追加）
+
+86 85 的全局 adopt 只是「把样式表挂到 document」，作用域其实还是整页，和没 adopt 一样；改成标准自定义元素
+组织：每个组件一个 `CustomElementAdapter` 子类 + 自己的 shadow root + 自己的 sheet（`attachStyledShadow`
+只装进自己的树，`document.adoptedStyleSheets` 保持 0 份），`theme/Reset.kt` 的 `RESET` 是唯一共享的那份；
+十个标签 `<kmp-demo-page>` / `<kmp-demo-header>` / `<kmp-classes>` / `<kmp-invocation>` / `<kmp-proxy>` /
+`<kmp-resources>` / `<kmp-annotations>` / `<kmp-enums>` / `<kmp-nested>` / `<kmp-limitations>`，`index.html`
+直接用标记实例化页面，`Main.kt` 按「子元素在前、页面最后」define。目录按归属分层：`page/`（`DemoPage` +
+`theme/` 调色板与 class 常量 + `lang/` 文案）、`page/header/`、`page/section/`（`SectionShell` +
+`OutputList` 这两个一对多里的「一」）、`page/section/sections/`（八个区块即「多」）；`SectionShell` 仍是被
+组合的部件而不是基类。同时给 JS 目标补 `compilerOptions { target = "es2015" }`——ES5 下 Kotlin 发射
+`HTMLElement.call(this)`，DOM 构造器只能 `new`，浏览器抛 "Please use the 'new' operator"、元素不升级
+
 验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution` 通过；`:demo:e2eTest` 6 个用例、18 项断言全绿
 （`h1.title`、`tr.row`、`.detail .member`、`.output`、`img.thumb`、`.lang-switch`、`.page` 与新页面对得上，
 `fun greet(` / `val greeting` / `Hello, Ada!` / `proxy(greet) -> world` / `name=person` / `config.json`
@@ -215,8 +228,7 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 包一层等于放弃检查）；语言切换按钮原本用 UA 的 `buttontext` 黑色，深色底上看不见，改为在 `PAGE_SHEET`
 里给 `color` / `backgroundColor` / `borderColor` 基础值（连同 hover 一起留在 sheet，避免内联压过
 `:hover`）。实测按钮常态 `rgb(154,163,175)`、hover 边框与文字都变 `rgb(110,168,254)`。
-85 的验证：`:demo:compileKotlinJs`、`:demo:detekt`（0 findings）、`:demo:jsBrowserDistribution` 通过；
-`:demo:e2eTest` 6 个用例、18 项断言全绿（选择器契约与文案全部保留，`ProxySection` 从 `p.output` 换成
+85 的验证：`:demo:compileKotlinJs`、`:demo:detekt`（0 findings）、`:demo:jsBrowserDistribution` 通过；`:demo:e2eTest` 6 个用例、18 项断言全绿（选择器契约与文案全部保留，`ProxySection` 从 `p.output` 换成
 `ul.output` 后 `.output` 断言仍然命中）。Playwright 实测生产产物：`document.querySelectorAll("[style]")`
 只剩 1 个节点（`<body>` 的首屏底色，单节点、不是 N 份重复），`table.outerHTML` 已是
 `<table class="class-table">` + `<th class="cell cell-head">`；`document.adoptedStyleSheets` 共 6 份
@@ -227,6 +239,15 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 无失败请求。上线后 CI run `43901635441`（四个 job）与 Pages run `43901620856` 全绿；线上
 `/demo/` 实测 `[style]` 只有 `BODY`、6 份 adopted sheet、`<table class="class-table">` /
 `<th class="cell cell-head">`、9 行、按钮 `rgb(154,163,175)`、点行后 `.detail .member` 正常、无 console error。
+86 的验证：修正前的产物里 `<kmp-demo-page>` 只被 define、没有 shadow root，浏览器抛
+`Failed to construct 'HTMLElement': Please use the 'new' operator`；补 `target = "es2015"` 后同一探针显示
+`created.shadow = true`、`hostIsUpgraded = true`。生产产物实测：`document.adoptedStyleSheets.length = 0`，
+每个组件各自的 shadow root 分别 adopt 2/3/4 份 sheet（`kmp-demo-header` 2 份、`kmp-classes` 3 份共 14 条
+规则、`kmp-resources` 4 份），全页仍只有 `BODY` 一个 `style` 属性；`td` padding `9px 12px`、`th` 字重 600、
+`h2` 19px、`.section-hint` margin 14px、按钮常态 `rgb(154,163,175)` / hover `rgb(110,168,254)`、选中行
+`rgba(110,168,254,0.12)` 与 `.detail .member` 文本均与改写前一致，9 行表格、7 个 `.output` 列表都在。
+`:demo:e2eTest` 6 个用例、18 项断言全绿（Playwright 的 CSS 选择器穿透 open shadow root，原有选择器契约
+不需要改）；`:demo:detekt` 0 findings；`./gradlew build` 通过。中英首屏与选中态截图核对，无 console error。
 
 ## 明确不做
 

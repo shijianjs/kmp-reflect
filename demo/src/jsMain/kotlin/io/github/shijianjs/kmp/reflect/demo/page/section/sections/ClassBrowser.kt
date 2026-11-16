@@ -1,15 +1,49 @@
-package io.github.shijianjs.kmp.reflect.demo.page
+package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
 import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.createElement
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
+import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
+import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
+import io.github.shijianjs.kmp.reflect.demo.page.lang.Copy
+import io.github.shijianjs.kmp.reflect.demo.page.lang.english
+import io.github.shijianjs.kmp.reflect.demo.page.section.SECTION_SHEET
+import io.github.shijianjs.kmp.reflect.demo.page.section.SectionShell
+import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_MUTED_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_OK_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.CELL_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.CODE_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_HEADING_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_HINT_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.HEAD_CELL_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.HINT_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.MEMBER_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.MEMBER_LIST_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
+import io.github.shijianjs.kmp.reflect.demo.page.theme.ROW_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.SELECTED_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.TABLE_CLASS
+import io.github.shijianjs.kmp.reflect.demo.page.theme.hairline
+import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedFill
+import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedText
+import io.github.shijianjs.kmp.reflect.demo.page.theme.okFill
+import io.github.shijianjs.kmp.reflect.demo.page.theme.okText
+import io.github.shijianjs.kmp.reflect.demo.page.theme.panel
+import io.github.shijianjs.kmp.reflect.demo.page.theme.panelStrong
+import io.github.shijianjs.kmp.reflect.demo.page.theme.selectedFill
+import web.components.CustomElementReference
 import web.cssom.Border
 import web.cssom.BorderCollapse
 import web.cssom.CSSStyleSheet
 import web.cssom.Cursor
+import web.cssom.FontFamily
+import web.cssom.FontWeight
 import web.cssom.LineStyle
 import web.cssom.Margin
 import web.cssom.Overflow
@@ -20,6 +54,8 @@ import web.cssom.integer
 import web.cssom.number
 import web.cssom.pct
 import web.cssom.px
+import web.dom.TagName
+import web.events.EventHandler
 import web.html.HTMLDivElement
 import web.html.HTMLHeadingElement
 import web.html.HTMLTableElement
@@ -38,17 +74,15 @@ private class ClassRow(
 )
 
 /**
- * The class table and the member panel under it.
+ * `<kmp-classes>`: the class table and the member panel under it.
  *
  * Rows are built once from the registered metadata; a click toggles the selected class, which repaints
- * two rows and the detail panel — nothing else on the page is rebuilt, and switching languages only
- * re-labels the header and re-draws the detail. Every rule these nodes obey is in [BROWSER_SHEET]: the
- * nodes carry classes, not copies of the same declarations.
+ * two rows and the detail panel — nothing else is rebuilt, and switching languages only re-labels the
+ * header and re-draws the detail. Rules live in this element's own sheet, adopted by its shadow root,
+ * so they cannot reach any other component.
  */
-internal class ClassBrowser {
+internal class ClassBrowser : CustomElementAdapter() {
     private val shell = SectionShell()
-
-    val root: HTMLElement = shell.root
 
     private val headRow: HTMLTableRowElement = HtmlTagName.tr.createElement()
 
@@ -79,6 +113,9 @@ internal class ClassBrowser {
     private var selected: String? = null
 
     init {
+        val shadow = attachStyledShadow(RESET, SECTION_SHEET, BROWSER_SHEET)
+        shell.nodes.forEach { node -> shadow.appendChild(node) }
+
         KmpClasses.all().forEach { kmpClass ->
             val members = cell()
             val annotations = cell()
@@ -88,7 +125,7 @@ internal class ClassBrowser {
                 appendChild(cell(kmpClass.kind.name.lowercase()))
                 appendChild(members)
                 appendChild(annotations)
-                onclick = web.events.EventHandler { toggleSelection(kmpClass.qualifiedName) }
+                onclick = EventHandler { toggleSelection(kmpClass.qualifiedName) }
             }
             rows += ClassRow(kmpClass, row, members, annotations)
             bodyRows.appendChild(row)
@@ -134,10 +171,10 @@ internal class ClassBrowser {
         rebuildDetail()
     }
 
-    /** Local collection rebuild: the panel is one node, its content is what the selection changes. */
+    /** Local collection rebuild: the panel is one node, and the selection is what changes it. */
     private fun rebuildDetail() {
         heading.textContent = copy.detailHeading
-        val kmpClass = selected?.let { KmpClasses.byNameOrNull(it) }
+        val kmpClass = selected?.let { name -> KmpClasses.byNameOrNull(name) }
         if (kmpClass == null) {
             detailBody.replaceChildren(
                 HtmlTagName.p.createElement {
@@ -162,7 +199,10 @@ internal class ClassBrowser {
         }
         kmpClass.properties.forEach { property ->
             list.appendChild(
-                memberLine("${if (property.isMutable) "var" else "val"} ${property.name}: ${property.type.simpleName}", property.isReadable),
+                memberLine(
+                    "${if (property.isMutable) "var" else "val"} ${property.name}: ${property.type.simpleName}",
+                    property.isReadable,
+                ),
             )
         }
         kmpClass.constructors.forEach { constructor ->
@@ -206,92 +246,104 @@ internal class ClassBrowser {
             }
             textContent = value
         }
+
+    companion object : CustomElementReference<ClassBrowser>(ClassBrowser::class.js) {
+        val NAME: TagName<ClassBrowser> = TagName("kmp-classes")
+
+        /**
+         * The browser's own rules: one rule per node kind, so the table costs four rules whether it
+         * holds nine classes or ninety.
+         *
+         * `.row.is-selected` is the one compound selector in the page: CSS has no typed way to join
+         * two `ClassName`s, so it is spelled once here, next to the two tokens it is made of. It comes
+         * after `.row:hover` so a selected row keeps its fill while the pointer is over it.
+         */
+        private val BROWSER_SHEET: CSSStyleSheet = cssSheet {
+            TABLE_CLASS {
+                width = 100.pct
+                borderCollapse = BorderCollapse.collapse
+                backgroundColor = panel
+                border = Border(1.px, LineStyle.solid, hairline)
+                borderRadius = 10.px
+                overflow = Overflow.hidden
+                fontSize = 13.px
+            }
+
+            CELL_CLASS {
+                textAlign = TextAlign.left
+                verticalAlign = VerticalAlign.top
+                padding = Padding(9.px, 12.px)
+                borderBottomWidth = 1.px
+                borderBottomStyle = LineStyle.solid
+                borderBottomColor = hairline
+                lineHeight = number(1.5)
+            }
+
+            HEAD_CELL_CLASS {
+                backgroundColor = panelStrong
+                color = mutedText
+                fontWeight = integer(600)
+            }
+
+            CODE_CLASS {
+                fontFamily = FontFamily.monospace
+            }
+
+            ROW_CLASS {
+                cursor = Cursor.pointer
+
+                Pseudos.hover { backgroundColor = panelStrong }
+            }
+
+            ".row.is-selected" { backgroundColor = selectedFill }
+
+            DETAIL_CLASS {
+                marginTop = 14.px
+                padding = Padding(14.px, 16.px)
+                backgroundColor = panel
+                border = Border(1.px, LineStyle.solid, hairline)
+                borderRadius = 10.px
+            }
+
+            DETAIL_HEADING_CLASS {
+                margin = Margin(0.px, 0.px, 8.px)
+                fontSize = 15.px
+                fontWeight = integer(600)
+                color = mutedText
+            }
+
+            MEMBER_LIST_CLASS {
+                margin = Margin(0.px, 0.px)
+                paddingLeft = 18.px
+                fontSize = 13.px
+            }
+
+            MEMBER_CLASS {
+                marginBottom = 2.px
+            }
+
+            BADGE_CLASS {
+                marginLeft = 8.px
+                padding = Padding(1.px, 7.px)
+                borderRadius = 999.px
+                fontSize = 11.px
+            }
+
+            BADGE_OK_CLASS {
+                backgroundColor = okFill
+                color = okText
+            }
+
+            BADGE_MUTED_CLASS {
+                backgroundColor = mutedFill
+                color = mutedText
+            }
+        }
+    }
 }
 
-/**
- * The browser's own rules.
- *
- * `.row.is-selected` is the one compound selector in the page: CSS has no typed way to join two
- * `ClassName`s, so it is spelled once here, next to the two tokens it is made of.
- */
-internal val BROWSER_SHEET: CSSStyleSheet = cssSheet {
-    TABLE_CLASS {
-        width = 100.pct
-        borderCollapse = BorderCollapse.collapse
-        backgroundColor = panel
-        border = Border(1.px, LineStyle.solid, hairline)
-        borderRadius = 10.px
-        overflow = Overflow.hidden
-        fontSize = 13.px
-    }
-
-    CELL_CLASS {
-        textAlign = TextAlign.left
-        verticalAlign = VerticalAlign.top
-        padding = Padding(9.px, 12.px)
-        borderBottomWidth = 1.px
-        borderBottomStyle = LineStyle.solid
-        borderBottomColor = hairline
-        lineHeight = number(1.5)
-    }
-
-    HEAD_CELL_CLASS {
-        backgroundColor = panelStrong
-        color = mutedText
-        fontWeight = integer(600)
-    }
-
-    CODE_CLASS {
-        fontFamily = codeFamily
-    }
-
-    ROW_CLASS {
-        cursor = Cursor.pointer
-
-        Pseudos.hover { backgroundColor = panelStrong }
-    }
-
-    ".row.is-selected" { backgroundColor = selectedFill }
-
-    DETAIL_CLASS {
-        marginTop = 14.px
-        padding = Padding(14.px, 16.px)
-        backgroundColor = panel
-        border = Border(1.px, LineStyle.solid, hairline)
-        borderRadius = 10.px
-    }
-
-    DETAIL_HEADING_CLASS {
-        margin = Margin(0.px, 0.px, 8.px)
-        fontSize = 15.px
-        fontWeight = integer(600)
-        color = mutedText
-    }
-
-    MEMBER_LIST_CLASS {
-        margin = Margin(0.px, 0.px)
-        paddingLeft = 18.px
-        fontSize = 13.px
-    }
-
-    MEMBER_CLASS {
-        marginBottom = 2.px
-    }
-
-    BADGE_CLASS {
-        marginLeft = 8.px
-        padding = Padding(1.px, 7.px)
-        borderRadius = 999.px
-        fontSize = 11.px
-    }
-
-    BADGE_OK_CLASS {
-        backgroundColor = okFill
-        color = okText
-    }
-
-    BADGE_MUTED_CLASS {
-        backgroundColor = mutedFill
-        color = mutedText
-    }
+/** Defines `<kmp-classes>` once and returns its tag. */
+internal fun classBrowserTag(): TagName<ClassBrowser> {
+    defineIfMissing(ClassBrowser.NAME, ClassBrowser.Companion)
+    return ClassBrowser.NAME
 }

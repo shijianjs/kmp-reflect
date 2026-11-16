@@ -1,4 +1,4 @@
-package io.github.shijianjs.kmp.reflect.demo.page
+package io.github.shijianjs.kmp.reflect.demo.page.lang
 
 /** The two languages the demo page switches between, in place, without rebuilding the page. */
 internal enum class Lang { EN, ZH }

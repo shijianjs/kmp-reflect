@@ -58,17 +58,27 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 
 ## 演示与文档
 
-- demo 页面在 `demo/src/jsMain/kotlin/.../demo/page/`，按区块一个类（`HeaderBar`、`ClassBrowser`、
-  `InvocationSection` …），`DemoPage` 只负责挂载；`Main.kt` 只注册元数据并把宿主元素交给 `DemoPage`。
-- 页面写法按 `.agents/skills/ui-code-style`：节点用 `TagName<T>.createElement { }` 建、用字段持有，
-  状态变化只改相关节点（`applyCopy` / `toggleSelection`），**不要**引入 `render()` 式整页重绘；
-  语言切换走各区块的 `applyCopy`，不重建 DOM。
-- **静态样式进 sheet，内联只留给运行时值**：每个区块自己有一份 `X_SHEET`（`HEADER_SHEET`、
-  `SECTION_SHEET`、`OUTPUT_SHEET`、`BROWSER_SHEET`、`RESOURCES_SHEET`），节点只带 class；
-  `installPageStyle(HEADER_SHEET, …)` 一次性 adopt 到 `document.adoptedStyleSheets`（`PAGE_SHEET` 只留
-  `box-sizing` reset 和 `.page` 本身）。`inlineStyle` 只用于运行时才知道、会频繁变的那一两个属性。
-  理由是性能：样式与 DOM 实例是一对多，一条 class 规则覆盖所有同类节点，内联则是 N 份文本 + N 次解析。
-- 每个 class 标记都是 `Theme.kt` 里的一条 `internal val X_CLASS: ClassName`，调用点写
+- demo 页面是一组标准自定义元素，每个组件一个文件、一个 shadow root：`page/DemoPage.kt`（
+  `<kmp-demo-page>`，只做组合与语言状态）、`page/header/HeaderBar.kt`（`<kmp-demo-header>`）、
+  `page/section/SectionShell.kt` + `page/section/OutputList.kt`（八个区块共用的外壳与正文列表）、
+  `page/section/sections/*.kt`（`<kmp-classes>`、`<kmp-invocation>` … 各区块）。目录层级就是归属：
+  `page/` 放整页与其词汇（`theme/` 调色板与 class 常量、`lang/` 文案），`page/section/` 放一对多里的
+  「一」，`page/section/sections/` 放「多」。**不要**把区块文件平铺回 `page/`，也**不要**给 SectionShell
+  做成基类——它是被组合进去的部件，不是八个区块的父类（基类会把通用刷新重新引进来）。
+- 组件一律 `CustomElementAdapter` 子类：`init` 里 `attachStyledShadow(RESET, 自己的 sheet …)` 建树，节点用
+  `TagName<T>.createElement { }` 建、用字段持有；状态变化只改相关节点（`applyCopy` / `toggleSelection`），
+  **不要**引入 `render()` 式整页重绘。`Main.kt` 先注册元数据，再按「子元素在前、`kmp-demo-page` 最后」
+  的顺序 define 标签——`index.html` 里已有 `<kmp-demo-page class="page">`，define 时就地升级，构造函数会
+  立刻创建子元素，所以子标签必须先定义好。
+- **JS 目标必须 `compilerOptions { target = "es2015" }`**：默认 ES5 下 Kotlin 把类发射成
+  `function X() { HTMLElement.call(this) }`，而 DOM 构造器只能 `new`，浏览器直接抛 "Please use the 'new'
+  operator"，自定义元素永远不升级。这条同时是 `ktjs-dom-kit` 全仓库的设置，删了页面就白屏。
+- **样式按组件分 sheet，靠 shadow root 作用域，不挂全局**：每个组件一份 `X_SHEET`（在它的
+  `companion object` 里），交给 `attachStyledShadow` 只装进自己的 shadow root；`theme/Reset.kt` 的 `RESET`
+  是唯一共享的那份（`:host{display:block}` + `box-sizing`）。`document.adoptedStyleSheets` 保持为空——
+  全局 adopt 等于没有作用域，正是这一轮要避免的。`inlineStyle` 只用于运行时才知道、会频繁变的那一两个
+  属性，理由是性能：样式与 DOM 实例一对多，一条 class 规则覆盖所有同类节点。
+- 每个 class 标记都是 `theme/Classes.kt` 里的一条 `internal val X_CLASS: ClassName`，调用点写
   `classList.add(X_CLASS)`。**不要**加 `addClass("row")` 这类把字符串透传一层的包装（`classList.add`
   本来就只吃 `ClassName`，包一层反而让拼错的类名照样编译）。
 - 会随 `:hover` 变的属性（背景、边框色、文字色）必须在 sheet 里（内联优先级更高，会盖掉 hover 规则）。
@@ -76,6 +86,8 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 - 有限枚举的状态（选中行、invokable 徽标）用 class 切换（`.row.is-selected`、`.badge-ok`），不要内联颜色；
   `:hover` 与选中态同时存在时，选中规则写在 hover 规则**之后**，靠同特异性下的先后顺序生效。
 - **不要**再新增 `demo.css` 之类的集中式样式表：规则跟着组件走，sheet 只是同一文件里的一个常量。
+- `index.html` 的 `class="page"` 是 e2e 断言用的挂载点标记（页面本身的盒子由 `:host` 规则决定）；body 上
+  那条 `style` 是首屏防白闪的单点底色，不是逐节点内联，别扩写。
 - 文档站点的“全功能”配置是一套，别砍：`docs/build.gradle.kts` 的 `kitBundle` / `extractKitBundle` /
   `clientModuleFunction` / `browserBundle(-Files)`、`docs/.../docs/ClientModule.kt`、
   `Config.kt` 里的 `clientModules` / `themes` / `markdown.mermaid` / `themeConfig.mermaid`。首页是
