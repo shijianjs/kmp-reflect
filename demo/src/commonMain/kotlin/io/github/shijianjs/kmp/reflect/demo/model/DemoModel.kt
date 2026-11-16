@@ -71,9 +71,15 @@ public object Toolbox : KmpReflectable {
     public fun hello(): String = "hello from the marker interface"
 }
 
+/** A reflected base class, so `Calculator` shows a superclass linked to its own metadata. */
+@KmpReflect
+public open class Machine {
+    public open fun power(): Int = 1
+}
+
 /** Exercises members the processor records but cannot invoke. */
 @KmpReflect
-public open class Calculator {
+public open class Calculator : Machine() {
     public var lastResult: Int = 0
         private set
 

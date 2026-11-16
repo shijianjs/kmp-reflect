@@ -18,6 +18,7 @@ Generated metadata is plain data. Nothing is loaded, and every object is immutab
 | `annotations` | `List<KmpAnnotation>` written on the declaration |
 | `typeParameters` | `KmpTypeParameter` with bounds and nullability |
 | `supertypes` | Directly declared supertypes; not transitive |
+| `superclasses` | Directly declared supertypes that were reflected in the same module, linked to their metadata; `allSuperclasses` walks the chain |
 | `constructors`, `functions`, `properties` | Declared members, `@KmpReflectIgnore` members removed |
 | `enumEntries` | `KmpEnumEntry` with name, ordinal, annotations, and the instance itself |
 | `companion`, `nestedClasses` | Only the ones that were reflected themselves |

@@ -21,6 +21,9 @@ import kotlin.reflect.KClass
  * @property annotations annotations written on the declaration.
  * @property typeParameters the declaration's type parameters, in order.
  * @property supertypes directly declared supertypes, in source order.
+ * @property superclasses metadata of the declared supertypes that were reflected in the same module,
+ * in source order. A supertype from another module is only described by [supertypes], because its
+ * generated metadata is `internal` there; use [KmpClasses.implementing] for a name-based check.
  * @property constructors declared constructors.
  * @property functions declared member functions (including property accessors? no — accessors stay
  * inside [properties]).
@@ -42,6 +45,7 @@ public class KmpClass(
     public val annotations: List<KmpAnnotation> = emptyList(),
     public val typeParameters: List<KmpTypeParameter> = emptyList(),
     public val supertypes: List<KmpTypeRef> = emptyList(),
+    public val superclasses: List<KmpClass> = emptyList(),
     public val constructors: List<KmpConstructor> = emptyList(),
     public val functions: List<KmpFunction> = emptyList(),
     public val properties: List<KmpProperty> = emptyList(),
@@ -87,6 +91,26 @@ public class KmpClass(
 
     /** Whether [value] is an instance of this class. */
     public fun isInstance(value: Any?): Boolean = runtime?.isInstance(value) ?: false
+
+    /**
+     * Every reflected superclass reachable from this class, nearest first, each name once.
+     *
+     * Stops at the first supertype that was not reflected, so a chain that leaves the module is
+     * reported as the reflected prefix.
+     */
+    public val allSuperclasses: List<KmpClass>
+        get() {
+            val seen = LinkedHashMap<String, KmpClass>()
+            val pending = ArrayDeque(superclasses)
+            while (pending.isNotEmpty()) {
+                val next = pending.removeFirst()
+                if (next.qualifiedName == qualifiedName) continue
+                if (seen.containsKey(next.qualifiedName)) continue
+                seen[next.qualifiedName] = next
+                pending.addAll(next.superclasses)
+            }
+            return seen.values.toList()
+        }
 
     /** Functions with the given name, in declaration order. */
     public fun functionsNamed(name: String): List<KmpFunction> = functions.filter { it.name == name }

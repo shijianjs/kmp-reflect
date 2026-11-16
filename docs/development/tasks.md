@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 76 |
-| 已完成 | 75 |
+| 总计 | 77 |
+| 已完成 | 76 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -142,6 +142,7 @@ Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–76 是�
 74 CI 增加 `~/.konan` 缓存（Linux runner 现在要构建 `linuxX64`，没有缓存每次都要下 native 工具链）
 75 `suspend` 函数可调用：处理器为它生成 `suspend` lambda，运行时新增 `KmpFunction.invokeSuspend`
 76 CI 改成三宿主矩阵（ubuntu / macos / windows 各链接自己的 native 目标），浏览器与站点单独一个 job
+77 同模块内父类型递归反射：`KmpClass.superclasses` 直接链接到父类元数据，`allSuperclasses` 沿链上溯
 
 验证：`:demo:reflectionTest`（JVM）、`:demo:jsBrowserTest`、`:demo:wasmJsNodeTest`、`:demo:mingwX64Test`
 四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过（含 detekt）。
@@ -150,6 +151,8 @@ CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNod
 75 的验证：`Calculator.slowAdd` 在四个后端都由 `commonTest` 调用成功（`runSuspend` 用标准库
 `startCoroutine`，不引入协程依赖），`invoke` 对它抛 `KmpReflectException`。
 76 的验证：三个 `Verify on …` job 全绿，各自跑出 `linuxX64Test` / `macosArm64Test` / `mingwX64Test`。
+77 的验证：demo 里 `Calculator : Machine()`，四个后端都断言 `superclasses` / `allSuperclasses` 指向
+`Machine` 的元数据并能调用它的 `power()`；跨模块父类型仍只在 `supertypes` 里。
 
 ## 明确不做
 

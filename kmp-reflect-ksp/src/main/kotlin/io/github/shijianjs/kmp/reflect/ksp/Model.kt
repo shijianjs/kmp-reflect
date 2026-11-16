@@ -178,6 +178,8 @@ internal class ClassModel(
     val annotations: List<AnnotationModel>,
     val typeParameters: List<TypeParameterModel>,
     val supertypes: List<TypeModel>,
+    /** Supertypes reflected in the same module, whose metadata values this class links to. */
+    val reflectedSupertypeNames: List<String>,
     val constructors: List<ConstructorModel>,
     val functions: List<FunctionModel>,
     val properties: List<PropertyModel>,

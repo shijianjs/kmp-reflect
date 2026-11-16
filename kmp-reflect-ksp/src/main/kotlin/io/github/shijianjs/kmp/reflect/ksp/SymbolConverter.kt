@@ -170,6 +170,12 @@ internal class SymbolConverter(
         val className = declaration.toClassName()
         val packageName = declaration.packageName.asString()
         val supertypes = declaration.superTypes.map { typeModel(it.resolve()) }.toList()
+        // Supertypes that are reflected in this same module get linked to their metadata value. A
+        // supertype from another module is only described: its metadata is `internal` there.
+        val reflectedSupertypeNames = declaration.superTypes
+            .mapNotNull { it.resolve().declaration.qualifiedName?.asString() }
+            .filter { it in reflectedNames }
+            .toList()
         val typeParameters = declaration.typeParameters.map { typeParameterModel(it) }
 
         val declarations = declaration.declarations.toList()
@@ -228,6 +234,7 @@ internal class SymbolConverter(
             annotations = annotationsOf(declaration),
             typeParameters = typeParameters,
             supertypes = supertypes,
+            reflectedSupertypeNames = reflectedSupertypeNames,
             constructors = constructors,
             functions = functions,
             properties = properties,

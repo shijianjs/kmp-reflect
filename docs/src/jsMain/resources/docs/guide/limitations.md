@@ -21,8 +21,10 @@ whether it affects you.
 - **No extension members.** Extension functions and properties are not reflected; they are not members
   of the class in the bytecode sense either.
 - **No defaults at call time.** Default arguments are not applied by `invoke`: pass every parameter.
-- **No transitive supertypes.** `supertypes` lists what was declared. Use
-  `KmpClasses.implementing(name)` when you need the full chain over registered classes.
+- **Supertype links stop at the module boundary.** `superclasses` links the declared supertypes that
+  were reflected in the *same module*, and `allSuperclasses` walks that chain. A supertype from another
+  artifact stays in `supertypes` only, because its generated metadata is `internal` there; use
+  `KmpClasses.implementing(name)` to match by name across everything registered.
 - **Annotations are a snapshot.** Values are read from the source at compile time; an annotation whose
   argument is computed elsewhere is recorded as that expression's value only when it is a literal.
 

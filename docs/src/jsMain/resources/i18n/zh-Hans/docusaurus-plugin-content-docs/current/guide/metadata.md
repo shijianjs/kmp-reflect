@@ -17,6 +17,7 @@ description: KmpClass 暴露了什么，以及“可调用”的含义。
 | `annotations` | 写在声明上的 `List<KmpAnnotation>` |
 | `typeParameters` | `KmpTypeParameter`，含上界与可空性 |
 | `supertypes` | 直接声明的父类型，不含传递闭包 |
+| `superclasses` | 直接声明且在同一模块内参与反射的父类型，带元数据链接；`allSuperclasses` 沿链上溯 |
 | `constructors`、`functions`、`properties` | 已声明的成员，`@KmpReflectIgnore` 的已移除 |
 | `enumEntries` | `KmpEnumEntry`，含名称、序号、注解与实例本身 |
 | `companion`、`nestedClasses` | 只有同样参与反射的才会出现 |

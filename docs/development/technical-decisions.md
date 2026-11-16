@@ -29,6 +29,9 @@
 
 - 每个被标注的类生成一段 `KmpClass` 构造代码（`private val ... by lazy { KmpClass(...) }`），
   成员调用能力以 lambda 形式内联（`invoke = { receiver, args -> (receiver as Foo).bar(args[0] as Int) }`）。
+- 父类型里凡是**同模块内也参与反射**的，直接链接到对方的 `KmpClass`（`superclasses = listOf(pkg.kmpClass_X)`），
+  这样 `allSuperclasses` 沿链上溯时拿到的仍是真元数据而不是名字；跨模块的父类型只留在 `supertypes` 里
+  （别处生成的值是 `internal`，链不上）。
 - 不做运行时类加载、不读资源文件、不做失败重试：生成的是普通 Kotlin 源码，跨平台一致，
   消费方编译不过就是编译不过，不会留到运行时才炸。
 - 类型信息用自建的 `KmpTypeRef` 表达（`qualifiedName` / `arguments` / `nullable` / `runtime: KClass<*>?`），
@@ -91,3 +94,4 @@
 - 注解实例化（`KmpAnnotation` 直接返回注解实例）。
 - 增量编译下的更细粒度失效（v0.1 一次全量生成，功能正确但粒度粗）。
 - 交叉 native 目标（iOS 等）的发布矩阵：需要 macOS 构建机，属于发布流程而非库能力。
+- 跨模块父类型链接（需要发布方把元数据值暴露成非 `internal`，或提供一张名字到元数据的注册表）。

@@ -8,6 +8,7 @@ import io.github.shijianjs.kmp.reflect.KmpReflection
 import io.github.shijianjs.kmp.reflect.demo.model.Calculator
 import io.github.shijianjs.kmp.reflect.demo.model.Greeter
 import io.github.shijianjs.kmp.reflect.demo.model.Library
+import io.github.shijianjs.kmp.reflect.demo.model.Machine
 import io.github.shijianjs.kmp.reflect.demo.model.Person
 import io.github.shijianjs.kmp.reflect.demo.model.Shape
 import io.github.shijianjs.kmp.reflect.demo.model.Toolbox
@@ -42,8 +43,8 @@ class ReflectionTest {
 
     @Test
     fun `module registers every reflected class`() {
-        // Person, its companion, Greeter, Shape, Toolbox, Calculator, Library and Library.Shelf
-        assertEquals(8, KmpClasses.size)
+        // Person, its companion, Greeter, Shape, Toolbox, Calculator, Machine, Library and Library.Shelf
+        assertEquals(9, KmpClasses.size)
         assertNotNull(KmpClasses.byNameOrNull("$model.Person"))
         assertNotNull(KmpClasses.byNameOrNull("$model.Person.Companion"))
         assertNotNull(KmpClasses.byNameOrNull("$model.Library.Shelf"))
@@ -159,6 +160,17 @@ class ReflectionTest {
         // function does not suspend for real work, so the coroutine completes synchronously.
         assertEquals(7, runSuspend { slowAdd.invokeSuspend(Calculator(), 3, 4) })
         assertFailsWith<KmpReflectException> { assertNotNull(slowAdd).invoke(Calculator(), 3, 4) }
+    }
+
+    @Test
+    fun `reflected supertypes are linked to their metadata`() {
+        val calculator = KmpClasses.of(Calculator::class)
+        assertEquals(listOf("$model.Machine"), calculator.superclasses.map { it.qualifiedName })
+        // `Machine` itself has no reflected superclass, so the chain ends there.
+        assertEquals(listOf("$model.Machine"), calculator.allSuperclasses.map { it.qualifiedName })
+        assertEquals(1, calculator.superclasses.single().function("power", 0)?.invoke(Machine()))
+        // `Person` has no declared superclass worth linking (data classes only add `Any`).
+        assertTrue(KmpClasses.of(Person::class).superclasses.isEmpty())
     }
 
     @Test

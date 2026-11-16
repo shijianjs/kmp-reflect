@@ -71,6 +71,7 @@ internal class MetadataWriter {
         add("annotations = ").annotationList(model.annotations).add(",\n")
         add("typeParameters = ").typeParameterList(model.typeParameters).add(",\n")
         add("supertypes = ").typeList(model.supertypes).add(",\n")
+        add("superclasses = ").linkedClassList(model.reflectedSupertypeNames).add(",\n")
         add("constructors = ").constructorList(model.constructors).add(",\n")
         add("functions = ").functionList(model.functions).add(",\n")
         add("properties = ").propertyList(model.properties).add(",\n")
@@ -334,8 +335,23 @@ internal class MetadataWriter {
         }
     }
 
-    private fun CodeBlock.Builder.nestedList(names: List<String>): CodeBlock.Builder = apply {
+    /** References to other classes' metadata values; qualified, since the class may be in another package. */
+    private fun CodeBlock.Builder.linkedClassList(names: List<String>): CodeBlock.Builder = apply {
         if (names.isEmpty()) {
+            add("emptyList()")
+        } else {
+            add("listOf(")
+            names.forEachIndexed { index, name ->
+                if (index > 0) add(", ")
+                // A top-level `internal` property is reachable across packages when qualified.
+                val prefix = name.substringBeforeLast('.', "")
+                add("%L", if (prefix.isEmpty()) metadataValueName(name) else "$prefix.${metadataValueName(name)}")
+            }
+            add(")")
+        }
+    }
+
+    private fun CodeBlock.Builder.nestedList(names: List<String>): CodeBlock.Builder = apply {        if (names.isEmpty()) {
             add("emptyList()")
         } else {
             add("listOf(")
