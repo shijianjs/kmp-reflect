@@ -39,31 +39,36 @@ demo 用同一条规则：`commonTest` 里的元数据断言在宿主声明的�
 
 ## 按目标接入 KSP
 
-KSP 2 没有 catch-all 配置：处理器按目标注册，KSP 为每个配了处理器的目标各建一个任务。
+KSP 2 没有 catch-all 配置：处理器按目标注册，KSP 为每个配了处理器的目标各建一个任务。Gradle 插件会
+替每个目标（含宿主声明的那个 native 目标）做这件事，不用按平台重复写：
 
 ```kotlin
-dependencies {
-    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspMingwX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspLinuxX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+plugins {
+    id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
+}
+
+kmpReflect {
+    registry.set("com.example.reflect:AppReflection")
 }
 ```
 
-native 目标很多时直接循环：
+手写就是每个目标一行——而且以后新增目标时会悄悄漏掉：
 
 ```kotlin
-kotlin.targets
-    .filter { it.name != "metadata" }
-    .forEach { target ->
-        add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
-            "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    }
+dependencies {
+    kotlin.targets
+        .filter { it.name != "metadata" }
+        .forEach { target ->
+            add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
+                "io.github.shijianjs:kmp-reflect-ksp:<version>")
+        }
+}
 ```
 
 处理器本身是纯 JVM 产物：无论 compilation 面向哪个后端，它都在构建宿主的编译器进程里运行。
-`./gradlew :your-module:dependencies | grep ksp` 能列出本项目准确的配置名。
+`./gradlew :your-module:dependencies --configuration kspJs` 能看到各目标实际解析到什么；测试编译
+（`ksp<Test>`）故意不配处理器，元数据只从主源码集生成。
 
 ## 各后端的差异
 

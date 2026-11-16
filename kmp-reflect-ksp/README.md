@@ -4,7 +4,21 @@ The KSP processor half of [kmp-reflect](../README.md): it reads annotated source
 writes the metadata that `kmp-reflect-core` exposes.
 
 A plain JVM module — KSP runs inside the Kotlin compiler on the build machine, never on a target
-platform — registered per target, because KSP 2 has no catch-all configuration:
+platform — registered per target, because KSP 2 has no catch-all configuration. The
+[Gradle plugin](../gradle/kmp-reflect-gradle-plugin) does that registration for you:
+
+```kotlin
+plugins {
+    id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
+}
+
+kmpReflect {
+    registry.set("com.example.demo:DemoReflection")
+}
+```
+
+By hand it is one configuration per target:
 
 ```kotlin
 dependencies {

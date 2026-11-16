@@ -86,9 +86,24 @@
 - JDK 与 Gradle 的装配收在 `.github/actions/gradle-setup` 复合 action，避免各 job 漂移（官方 KMP CI
   指南的做法）。`GRADLE_OPTS` 关 daemon、开并行与 build cache。
 
+## 10. Gradle 插件
+
+- 插件（`io.github.shijianjs.kmp-reflect`）是一个 **included build**（`gradle/kmp-reflect-gradle-plugin`），
+  不是根构建的子工程：只有独立构建才能被 `pluginManagement { includeBuild(...) }` 解析，`:demo` 也才能
+  按 id 应用它——和外部消费方走同一条路径，集成测试测的就是用户用的那条。
+- **不依赖 Kotlin 插件 API**，按 configuration 名字识别目标：`ksp<Target>` 存在就注册处理器，跳过
+  `ksp<Target>Test`（元数据只从主源码集生成）与 `*Metadata`（metadata 编译会往 `commonMain` 重复生成，
+  与各目标自己的产物冲突）。纯 JVM 工程只有 `ksp`，那个也认。
+- 处理器的坐标默认取插件自身的版本（构建时生成常量），避免处理器与插件版本漂移；本仓库 `:demo` 用
+  `processorProject = ":kmp-reflect-ksp"` 指向在工作树里编译的处理器，不需要先发布。
+- **资源目录声明成 KSP 任务的 `inputs`**（`withPathSensitivity(RELATIVE)`）：处理器在编译期读文件，
+  不声明输入的话，改资源不会重跑，旧内容会一直留在生成代码里。这一条是插件存在的主要理由，比省几行
+  配置重要得多。
+
 ## v0.2 候选（不在 v0.1 计分范围）
 
-- Gradle 插件：自动按 target 配 KSP（含 native 的循环注册）、自动传资源目录与注册表选项。
+- 插件随主仓库发布到 Central 并验证 plugin marker（`java-gradle-plugin` 的 marker 与 vanniktech 是否
+  共存尚未验证；插件本身已落地，见 tasks.md 第 78 项）。
 - `androidTarget` 发布，让 Android 消费方拿到自己的变体。
 - 接口属性、默认参数参与代理。
 - 注解实例化（`KmpAnnotation` 直接返回注解实例）。

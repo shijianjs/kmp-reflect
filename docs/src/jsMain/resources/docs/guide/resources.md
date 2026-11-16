@@ -13,6 +13,17 @@ generated Kotlin.
 ## Configuration
 
 ```kotlin
+kmpReflect {
+    // One or more directories; the plugin passes them to the processor and declares them as inputs
+    // of the KSP tasks, so editing a resource reruns processing.
+    resources.from(layout.projectDirectory.dir("data"))
+}
+```
+
+Without the plugin, the same thing goes to a KSP argument — and the directories then have to be
+declared as task inputs by hand:
+
+```kotlin
 ksp {
     // One or more directories, separated by ',', ';' or the path separator.
     arg("kmp.reflect.resources", layout.projectDirectory.dir("data").asFile.absolutePath)

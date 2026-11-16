@@ -8,13 +8,15 @@ description: Gradle setup, KSP options, and the first reflected class.
 
 ## Gradle setup
 
-The library is two artifacts: the runtime (`kmp-reflect-core`, a multiplatform library) and the
-processor (`kmp-reflect-ksp`, a plain JVM artifact that KSP loads inside the compiler).
+The library is three artifacts: the runtime (`kmp-reflect-core`, a multiplatform library), the
+processor (`kmp-reflect-ksp`, a plain JVM artifact that KSP loads inside the compiler) and a Gradle
+plugin (`io.github.shijianjs.kmp-reflect`) that wires the processor into every target.
 
 ```kotlin title="build.gradle.kts"
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
 }
 
 kotlin {
@@ -30,29 +32,45 @@ kotlin {
     }
 }
 
-dependencies {
-    // KSP runs once per target: register the processor for every target you build. There is no
-    // catch-all configuration in KSP 2.
-    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspMingwX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+kmpReflect {
+    // where<package>:<ObjectName> — becomes `object DemoReflection : KmpReflectModule`
+    registry.set("com.example.demo:DemoReflection")
+    module.set("demo")
 }
 ```
 
-Many targets? Loop instead of repeating:
-
-```kotlin
-kotlin.targets
-    .filter { it.name != "metadata" }
-    .forEach { target ->
-        add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
-            "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    }
-```
+That is the whole wiring. The plugin adds the processor to every declared target's `ksp<Target>`
+configuration — KSP 2 has no catch-all, so a multiplatform build would otherwise repeat that line per
+target — uses the processor version matching its own, and forwards the options to the processor.
 
 `<version>` is the release you want, for example `0.1.0`. The artifacts are published to Maven Central
 under the `io.github.shijianjs` group.
+
+### Without the plugin
+
+The plugin is a convenience, not a requirement: everything it does can be written by hand.
+
+```kotlin
+dependencies {
+    // KSP runs once per target, so every target that compiles generated sources needs the processor.
+    kotlin.targets
+        .filter { it.name != "metadata" }
+        .forEach { target ->
+            add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
+                "io.github.shijianjs:kmp-reflect-ksp:<version>")
+        }
+}
+
+ksp {
+    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
+    arg("kmp.reflect.module", "demo")
+    // Resource directories are read at compile time, so the processor has to know about them.
+    arg("kmp.reflect.resources", layout.projectDirectory.dir("data").asFile.absolutePath)
+}
+```
+
+Doing it by hand also means declaring the resource directories as inputs of the KSP tasks, otherwise
+editing a resource leaves the previous content compiled in; the plugin does that for you.
 
 ## Opting a class in
 
@@ -65,25 +83,15 @@ class Person(val name: String)
 object Toolbox : KmpReflectable   // marker interface, no options
 ```
 
-Both are honoured only for `public` declarations (and, with `includeNonPublic`, also `internal` and
-`protected`) in the current module. A nested class is reflected only when it is opted in itself; a
-companion object is always pulled in with its class. `@KmpReflectIgnore` removes a single member — a
-function or property — from an otherwise reflected class.
+Both are honoured only for `public` declarations (and, with the default `kmp.reflect.visibility = all`,
+also `internal` and `protected`) in the current module. A nested class is reflected only when it is
+opted in itself; a companion object is always pulled in with its class. `@KmpReflectIgnore` removes a
+single member — a function or property — from an otherwise reflected class.
 
-## Pointing the processor at a module object
+## Registering the generated module
 
-The processor writes one metadata file per class plus one **module object** that lists them. Name it
-with a KSP argument:
-
-```kotlin
-ksp {
-    // where<package>:<ObjectName> — becomes `object DemoReflection : KmpReflectModule`
-    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
-    arg("kmp.reflect.module", "demo")
-}
-```
-
-At start-up, register it once. Every lookup and scan afterwards only sees what was registered:
+The processor writes one metadata file per class plus one **module object** that lists them, named by
+`kmpReflect.registry` above.
 
 ```kotlin
 KmpReflection.register(DemoReflection)

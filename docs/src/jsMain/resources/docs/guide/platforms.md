@@ -43,32 +43,38 @@ host declared, so a Windows checkout proves Native works through `mingwX64Test`.
 ## Wiring KSP per target
 
 KSP 2 has no catch-all configuration: the processor is registered per target, and KSP creates one task
-per target that has it.
+per target that has it. The Gradle plugin does this for every target it finds, including the native one
+the host declared, so nothing has to be repeated per platform:
 
 ```kotlin
-dependencies {
-    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspMingwX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspLinuxX64", "io.github.shijianjs:kmp-reflect-ksp:<version>")
+plugins {
+    id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
+}
+
+kmpReflect {
+    registry.set("com.example.reflect:AppReflection")
 }
 ```
 
-For a project with many native targets, loop over them:
+Doing it by hand means one line per target — and a line that silently stops working when you add a
+target later:
 
 ```kotlin
-kotlin.targets
-    .filter { it.name != "metadata" }
-    .forEach { target ->
-        add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
-            "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    }
+dependencies {
+    kotlin.targets
+        .filter { it.name != "metadata" }
+        .forEach { target ->
+            add("ksp${target.name.replaceFirstChar { it.uppercaseChar() }}",
+                "io.github.shijianjs:kmp-reflect-ksp:<version>")
+        }
+}
 ```
 
 The processor itself is a JVM artifact: it runs inside the compiler on the build host, whichever
-backend the compilation is for. `./gradlew :your-module:dependencies | grep ksp` lists the exact
-configuration names of your project.
+backend the compilation is for. `./gradlew :your-module:dependencies --configuration kspJs` shows what
+each target resolved; test compilations (`ksp<Test>`) deliberately get no processor, since the metadata
+is generated from the main source set.
 
 ## What differs per backend
 

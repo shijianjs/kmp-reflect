@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.konan.target.HostManager
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
 }
 
 // The demo is the integration test for the processor: the same annotated classes in `commonMain` are
@@ -65,18 +66,6 @@ kotlin {
     }
 }
 
-dependencies {
-    // KSP runs per target, so every target that needs generated sources declares the processor.
-    // Kotlin/Native and Wasm are configured the same way as JVM and JS: the processor itself is a
-    // JVM artifact that runs inside the compiler on the build host.
-    add("kspJvm", project(":kmp-reflect-ksp"))
-    add("kspJs", project(":kmp-reflect-ksp"))
-    add("kspWasmJs", project(":kmp-reflect-ksp"))
-    nativeTarget?.let { target ->
-        add("ksp${target.replaceFirstChar { it.uppercaseChar() }}", project(":kmp-reflect-ksp"))
-    }
-}
-
 // `commonTest` depends on `kotlin-test`, which Gradle resolves per target; the JVM test compilation
 // additionally depends on `kotlin-test-junit5` for the Playwright suite. Both artifacts provide the
 // `kotlin-test-framework-impl` capability, so the JVM test classpath has to be told which one wins,
@@ -90,12 +79,18 @@ listOf("jvmTestCompileClasspath", "jvmTestRuntimeClasspath").forEach { configura
     }
 }
 
-ksp {
+// The plugin adds the processor to every target's KSP configuration (JVM, JS, Wasm, and the host's
+// native target alike) and forwards these options, so nothing target-specific is written here.
+kmpReflect {
     // The module object the demo registers at start-up.
-    arg("kmp.reflect.registry", "io.github.shijianjs.kmp.reflect.demo:DemoReflection")
-    arg("kmp.reflect.module", "demo")
-    // Resource directories are read at compile time, not packaged: the content is inlined.
-    arg("kmp.reflect.resources", layout.projectDirectory.dir("data").asFile.absolutePath)
+    registry.set("io.github.shijianjs.kmp.reflect.demo:DemoReflection")
+    module.set("demo")
+    // Resource directories are read at compile time, not packaged: the content is inlined. The plugin
+    // also declares them as KSP task inputs, so editing a resource reruns processing.
+    resources.from(layout.projectDirectory.dir("data"))
+    // This build compiles the processor itself; a consumer leaves it unset and resolves the released
+    // artifact at the plugin's own version.
+    processorProject.set(":kmp-reflect-ksp")
 }
 
 // ---------------------------------------------------------------------------------------------

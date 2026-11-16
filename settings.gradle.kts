@@ -9,6 +9,10 @@ pluginManagement {
         mavenCentral()
     }
 
+    // The Gradle plugin lives in its own build so that `:demo` can apply it by id, the way a consumer
+    // would. An included build also means the plugin is compiled before any project that uses it.
+    includeBuild("gradle/kmp-reflect-gradle-plugin")
+
     // The plugin's version lives in gradle.properties next to the wrapper's: both come from
     // ktjs-docusaurus, but each of its modules carries its own `-kt.N` revision.
     resolutionStrategy {

@@ -12,14 +12,15 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 77 |
-| 已完成 | 76 |
+| 总计 | 78 |
+| 已完成 | 77 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
 已完成事项不再逐条列出；签名、验证依据见下方各节末尾的「验证」注记。
 共有两批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
-Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–76 是同一轮之后的两次推进（suspend、三宿主 CI）。
+Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–78 是同一轮之后的逐次推进（suspend、三宿主 CI、
+父类型链接、Gradle 插件）。
 
 ## 已完成
 
@@ -143,6 +144,8 @@ Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–76 是�
 75 `suspend` 函数可调用：处理器为它生成 `suspend` lambda，运行时新增 `KmpFunction.invokeSuspend`
 76 CI 改成三宿主矩阵（ubuntu / macos / windows 各链接自己的 native 目标），浏览器与站点单独一个 job
 77 同模块内父类型递归反射：`KmpClass.superclasses` 直接链接到父类元数据，`allSuperclasses` 沿链上溯
+78 Gradle 插件 `io.github.shijianjs.kmp-reflect`：按 `ksp<Target>` 配置名给每个目标注册处理器，
+转发 `kmp.reflect.*` 选项，并把资源目录声明成 KSP 任务输入（改动即重跑）
 
 验证：`:demo:reflectionTest`（JVM）、`:demo:jsBrowserTest`、`:demo:wasmJsNodeTest`、`:demo:mingwX64Test`
 四套断言全绿，`:demo:e2eTest` 18 项全绿；`./gradlew build` 通过（含 detekt）。
@@ -153,6 +156,10 @@ CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNod
 76 的验证：三个 `Verify on …` job 全绿，各自跑出 `linuxX64Test` / `macosArm64Test` / `mingwX64Test`。
 77 的验证：demo 里 `Calculator : Machine()`，四个后端都断言 `superclasses` / `allSuperclasses` 指向
 `Machine` 的元数据并能调用它的 `power()`；跨模块父类型仍只在 `supertypes` 里。本机与三宿主 CI 均通过。
+78 的验证：`:demo` 改为 `kmpReflect { … }`，删掉手写的四条 `add("ksp<Target>")` 与 `ksp { arg }`；
+`:demo:dependencies --configuration ksp{Jvm,Js,WasmJs,MingwX64}` 各解析到处理器、`kspJvmTest` 为空；
+在 `demo/data` 加一个文件后 `:demo:kspKotlinJvm` 从 UP-TO-DATE 变为执行并把它内联进生成代码，删掉后
+再执行一次即消失；`./gradlew build` 通过（四个后端的断言全部重跑）。
 
 ## 明确不做
 
@@ -162,8 +169,8 @@ CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNod
 
 ## 备注
 
-- 清单之外的后续工作（Gradle 插件、`androidTarget` 发布、suspend 调用、注解实例化、代理属性转发、
-  交叉 native 发布矩阵）记在 [technical-decisions.md](technical-decisions.md) 的「v0.2 候选」一节。
+- 清单之外的后续工作（`androidTarget` 发布、注解实例化、代理属性转发、交叉 native 发布矩阵、插件自身的
+  发布 marker 验证）记在 [technical-decisions.md](technical-decisions.md) 的「v0.2 候选」一节。
 - 发布流程（`release.yml`）只在 `workflow_dispatch` 手动触发时执行，本地不冒用签名密钥，因此
   “配置已适配”不等于“已验证上传”，验证归属 hub 仓库。
 - 交叉 native 目标（iOS 等）不在本机验证范围：Apple 目标只能在 macOS 宿主上构建与运行。

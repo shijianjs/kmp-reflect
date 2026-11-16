@@ -10,10 +10,14 @@
 | --- | --- |
 | `kmp-reflect-core/` | 运行时（`commonMain`）：`KmpClass`、`KmpClasses`、`KmpReflection`、`proxy/`、`resource/`。发布。 |
 | `kmp-reflect-ksp/` | KSP 处理器（纯 JVM）：`KmpReflectProcessor` + `Model`/`SymbolConverter` + 三个 `*Writer`。发布。 |
-| `demo/` | KMP（jvm + js executable）示例页面，同时是两个目标的端到端测试。不发布。 |
+| `gradle/kmp-reflect-gradle-plugin/` | Gradle 插件（included build，独立构建）：按目标注册处理器、转发 `kmp.reflect.*` 选项、把资源目录声明成 KSP 任务输入。发布。 |
+| `demo/` | KMP（jvm + js executable）示例页面，同时是各目标的端到端测试。不发布。 |
 | `docs/` | Docusaurus 站点（Kotlin 写配置 + Markdown）。不发布。 |
 
-`settings.gradle.kts` 必须 include 这四个；缺一个不影响其他模块，但 `pagesSite`、CI 会失败。
+`settings.gradle.kts` include 了 `:kmp-reflect-core`、`:kmp-reflect-ksp`、`:demo`、`:docs` 四个子工程，
+另在 `pluginManagement` 里 `includeBuild("gradle/kmp-reflect-gradle-plugin")`——它在独立构建里才能被
+`:demo` 以 `id("io.github.shijianjs.kmp-reflect")` 应用。缺子工程会让 `pagesSite`、CI 失败；插件构建的
+版本来自根 `gradle.properties`（读文件，不读 `version` 对象）。
 
 ## 常用命令
 
@@ -46,8 +50,9 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 - **运行时保持 `commonMain`**：目前只有一个 `expect`/`actual`（`PlatformReflection.kt`，JVM 返回全限定名、
   Native 返回简单名、JS/Wasm 返回 `null`）。新增平台支持时优先改这里，不要在 core 里加平台特化。
 - **目标按「KSP 能生成到哪」决定，不按「以前支持到哪」决定**：core 声明 jvm / js / wasmJs，native 按
-  构建宿主二选一（`mingwX64` / `linuxX64` / Apple）。加新目标 = 加一个 `ksp<Target>` 配置 + 一个
-  `PlatformReflection` actual，不许为了省事把 target 从 `build` 里剔掉。
+  构建宿主三选一（`mingwX64` / `linuxX64` / Apple）。加新目标 = 声明目标 + 一个 `PlatformReflection`
+  actual，**不要**再手写 `add("ksp<Target>")`：`kmp-reflect-gradle-plugin` 按配置名自动给每个目标注册
+  处理器（跳过 `Test` / `Metadata`），也不许为了省事把 target 从 `build` 里剔掉。
 - **文本文件用 LF**，临时产物放 `target/` 或 `build/`，不要污染根目录。
 - **`@PublishedApi internal`** 的成员是给内联函数用的，改签名前先 `grep` 调用点。
 

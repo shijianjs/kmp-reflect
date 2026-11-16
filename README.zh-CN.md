@@ -27,6 +27,7 @@ personClass.function("greet", 1)?.invoke(instance, "Hello")   // "Hello, Ada!"
 | --- | --- | --- |
 | [kmp-reflect-core](kmp-reflect-core) | 是 | 运行时：`KmpClass`、`KmpClasses`、代理、资源，全部在 `commonMain`。 |
 | [kmp-reflect-ksp](kmp-reflect-ksp) | 是 | KSP 处理器：读源码，写元数据与模块对象。纯 JVM。 |
+| [kmp-reflect-gradle-plugin](gradle/kmp-reflect-gradle-plugin) | 是 | Gradle 插件：给每个目标注册处理器并转发选项。 |
 | [demo](demo) | 否 | 浏览器 demo，同时是两个目标的集成测试。 |
 | [docs](docs) | 否 | Docusaurus 站点：在 GitHub Pages 上提供 `/`、`/demo/`、`/api/`。 |
 
@@ -36,6 +37,7 @@ personClass.function("greet", 1)?.invoke(instance, "Hello")   // "Hello, Ada!"
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
 }
 
 kotlin {
@@ -46,15 +48,9 @@ kotlin {
     }
 }
 
-dependencies {
-    // 每个目标一条配置；只加你项目真正会构建的目标。
-    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-}
-
-ksp {
-    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
+kmpReflect {
+    // 每个已声明的目标都会拿到处理器，不用按平台重复写。
+    registry.set("com.example.demo:DemoReflection")
 }
 ```
 
@@ -67,8 +63,8 @@ ksp {
 - **类元数据** —— 名称、种类、可见性、修饰符、父类型、类型参数、构造函数、函数、属性、枚举项、
   伴生对象与嵌套类。
 - **注解数据与扫描** —— 注解类型与类型化实参，`annotatedWith(name)`、`implementing(name)`。
-- **调用** —— 构造函数、函数、访问器都能通过元数据执行；`suspend` 与泛型成员会被描述，但标记为
-  不可调用。
+- **调用** —— 构造函数、函数、访问器都能通过元数据执行；`suspend` 成员走 `invokeSuspend`；泛型成员
+  会被描述，但标记为不可调用。
 - **动态代理** —— 每个参与反射的接口生成一个实现类，转发给 `KmpInvocationHandler`。
 - **内联资源** —— 路径、MIME 与 Base64 字节写进生成的 Kotlin，并提供 `KmpResources` 注册表。
 - **没有运行时机制** —— 不加载类、不扫描、不反射；JVM、Kotlin/JS 浏览器、Node.js 行为一致。
@@ -84,9 +80,9 @@ KSP 能为哪些后端生成 Kotlin 源码，本库就支持哪些 —— 运行
 | Kotlin/Wasm（`wasmJs`） | 元数据、调用、代理、资源；reified 查找退化为身份比较 |
 | Kotlin/Native | 元数据、调用、代理、资源；reified 查找按简单名匹配 |
 
-KSP 按目标配置（`kspJvm`、`kspJs`、`kspWasmJs`、`kspMingwX64` ……），KSP 2 没有 catch-all 配置。
-本仓库按构建宿主声明一个 native 目标（Windows 用 `mingwX64`、Linux 用 `linuxX64`、macOS 用 Apple 的），
-因此 `./gradlew build` 永远不会要求宿主编译它链接不了的可执行文件。
+KSP 按目标配置（`kspJvm`、`kspJs`、`kspWasmJs`、`kspMingwX64` ……），KSP 2 没有 catch-all 配置——这正是
+Gradle 插件补上的那一步。本仓库按构建宿主声明一个 native 目标（Windows 用 `mingwX64`、Linux 用
+`linuxX64`、macOS 用 Apple 的），因此 `./gradlew build` 永远不会要求宿主编译它链接不了的可执行文件。
 
 ## 构建
 

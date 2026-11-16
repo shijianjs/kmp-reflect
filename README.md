@@ -28,6 +28,7 @@ describes is an inlined Kotlin call generated next to the class it belongs to.
 | --- | --- | --- |
 | [kmp-reflect-core](kmp-reflect-core) | yes | The runtime: `KmpClass`, `KmpClasses`, proxies, resources. `commonMain` only. |
 | [kmp-reflect-ksp](kmp-reflect-ksp) | yes | The KSP processor: reads sources, writes metadata and module objects. Plain JVM. |
+| [kmp-reflect-gradle-plugin](gradle/kmp-reflect-gradle-plugin) | yes | Gradle plugin: registers the processor on every target and forwards the options. |
 | [demo](demo) | no | Browser demo, and the integration test for both targets. |
 | [docs](docs) | no | Docusaurus site: `/`, `/demo/` and `/api/` on GitHub Pages. |
 
@@ -37,6 +38,7 @@ describes is an inlined Kotlin call generated next to the class it belongs to.
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
+    id("io.github.shijianjs.kmp-reflect")
 }
 
 kotlin {
@@ -47,15 +49,9 @@ kotlin {
     }
 }
 
-dependencies {
-    // One configuration per target; add the ones your project actually builds.
-    add("kspJvm", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-    add("kspWasmJs", "io.github.shijianjs:kmp-reflect-ksp:<version>")
-}
-
-ksp {
-    arg("kmp.reflect.registry", "com.example.demo:DemoReflection")
+kmpReflect {
+    // Every declared target gets the processor; nothing is repeated per platform.
+    registry.set("com.example.demo:DemoReflection")
 }
 ```
 
@@ -69,8 +65,8 @@ module object once, then look classes up by name, by `KClass` or with a reified 
   functions, properties, enum entries, companion and nested classes.
 - **Annotation data and scanning** — annotation types and typed arguments, `annotatedWith(name)`,
   `implementing(name)`.
-- **Invocation** — constructors, functions and accessors called through metadata; `suspend` and generic
-  members are described but reported as not invokable.
+- **Invocation** — constructors, functions and accessors called through metadata; `suspend` members
+  through `invokeSuspend`; generic members are described but reported as not invokable.
 - **Dynamic proxies** — a generated implementation per reflected interface, forwarding to a
   `KmpInvocationHandler`.
 - **Inlined resources** — path, MIME type and Base64 bytes written into generated Kotlin, with a
@@ -91,9 +87,9 @@ exist for a target:
 | Kotlin/Native | metadata, invocation, proxies, resources; reified lookups match by simple name |
 
 KSP is configured per target (`kspJvm`, `kspJs`, `kspWasmJs`, `kspMingwX64`, …) — there is no catch-all
-configuration in KSP 2. This repository declares one native target per build host (`mingwX64` on
-Windows, `linuxX64` on Linux, the Apple ones on macOS), so `./gradlew build` never asks for an
-executable the host cannot link.
+configuration in KSP 2, which is exactly what the Gradle plugin fills in. This repository declares one
+native target per build host (`mingwX64` on Windows, `linuxX64` on Linux, the Apple ones on macOS), so
+`./gradlew build` never asks for an executable the host cannot link.
 
 ## Building
 

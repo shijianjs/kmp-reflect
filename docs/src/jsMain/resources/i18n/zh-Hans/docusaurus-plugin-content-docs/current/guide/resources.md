@@ -11,6 +11,15 @@ Kotlin 代码。
 ## 配置
 
 ```kotlin
+kmpReflect {
+    // 一个或多个目录；插件把它们交给处理器，并声明成 KSP 任务的输入，改资源就会重新处理。
+    resources.from(layout.projectDirectory.dir("data"))
+}
+```
+
+不用插件时就是同一条 KSP 参数——但资源目录得自己声明为任务输入：
+
+```kotlin
 ksp {
     // 一个或多个目录，用 ','、';' 或路径分隔符分隔。
     arg("kmp.reflect.resources", layout.projectDirectory.dir("data").asFile.absolutePath)
