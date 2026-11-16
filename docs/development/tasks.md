@@ -152,7 +152,7 @@ CI（Linux runner）首跑实测：`jsBrowserTest`、`linuxX64Test`、`wasmJsNod
 `startCoroutine`，不引入协程依赖），`invoke` 对它抛 `KmpReflectException`。
 76 的验证：三个 `Verify on …` job 全绿，各自跑出 `linuxX64Test` / `macosArm64Test` / `mingwX64Test`。
 77 的验证：demo 里 `Calculator : Machine()`，四个后端都断言 `superclasses` / `allSuperclasses` 指向
-`Machine` 的元数据并能调用它的 `power()`；跨模块父类型仍只在 `supertypes` 里。
+`Machine` 的元数据并能调用它的 `power()`；跨模块父类型仍只在 `supertypes` 里。本机与三宿主 CI 均通过。
 
 ## 明确不做
 
