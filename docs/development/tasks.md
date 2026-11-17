@@ -12,15 +12,17 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 90 |
-| 已完成 | 89 |
+| 总计 | 91 |
+| 已完成 | 90 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
 已完成事项不再逐条列出；签名、验证依据见下方各节末尾的「验证」注记。
 共有三批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
 Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–78 是同一轮之后的逐次推进（suspend、三宿主 CI、
-父类型链接、Gradle 插件）；K 是 demo 页面重构与文档站配置还原。
+父类型链接、Gradle 插件）；K 是 demo 页面重构与文档站配置还原；L–R 是页面口径的逐次收敛（样式改静态
+sheet + class、标准 Web Component 与分层包、外壳容器化、class 常量就近、`PageBlock` 契约、要求沉淀进 skill
+与模板、模板 demo 按同一口径重写）。
 
 ## 已完成
 
@@ -312,6 +314,33 @@ demo 首屏、选中 `Person` 后的成员面板、以及切换语言后就地�
 上线后：Pages run `43917615626`（push `074c02c`）与 CI run `43917633208` 均成功；线上
 `https://shijianjs.github.io/kmp-reflect/demo/` 复测 `document.adoptedStyleSheets` 为 0、九个组件的 shadow
 root 各自 2–4 份 sheet、`[style]` 只有 `BODY`、9 行表格、`h1.title` 正常、无 console error。
+
+### R. 模板 demo 改成本项目风格（1，2026-11-17 追加）
+
+`ktjs-wrapper-template` 的 demo 原先只把 `<vaadin-button>` 挂到 `document.body`（来自 ktjs-vaadin 包装项目
+的样例，太特殊、不算数）。按本项目这一轮定下的口径重写：页面 `<ktjs-demo-page>` 自己定义元素，header
+`<ktjs-demo-header>`、外壳 `<ktjs-section>`、区块 `<ktjs-button-demo>` / `<ktjs-api>` / `<ktjs-conventions>`
+各自一个 `CustomElementAdapter` 子类、一份 `attachStyledShadow(RESET, 自己的 sheet)`；目录分层为
+`page/`、`page/header/`、`page/lang/`、`page/theme/`、`page/section/` + `page/section/sections/`；节点与样式
+走 `ktjs-dom-kit`（`TagName<T>.createElement`、`cssSheet`），另加 `gradle.properties` 的
+`ktjs-dom-kit.version` 与 `demo/build.gradle.kts` 的 `jsMain` 依赖；demo 自己定义元素，因此补
+`compilerOptions { target = "es2015" }`。上游按钮只被包在区块里，样式作用在它的宿主上，不伸进它的 shadow。
+中英切换沿用 `lang/Translation.kt` + `PageBlock.applyTranslation` 契约。`AGENTS.md` 的 demo 清单同步补上
+「自己定义元素」「用 ktjs-dom-kit」「换语言走契约」，es2015 那条从「demo 没开」改成「已开、不能删」；
+`ui-code-style` 第九节补「被封装的上游元素要装进自己的组件」，模板仓库提交 `071b517`。
+
+验证：`:demo:compileKotlinJs`、`kotlinUpgradePackageLock`（package-lock 随 npm 依赖刷新）、
+`:demo:jsBrowserDistribution`、`:demo:detekt`（0 findings）、`./gradlew build` 均通过；`:demo:e2eTest` 6 个
+用例全绿（标题与 `h1.title`、`img.logo`、`.page` 的 display、页面自带 shadow root、`document.adoptedStyleSheets`
+为 0、`[style]` 节点只有 `BODY`、每个 `ktjs-section` 都有 shadow root、按钮点击计数、`disabled` 属性透传、
+语言切换、无 console error / 无失败请求）。生产 bundle 自查 `grep 'HTMLElement.call'` 为 0。Playwright 实测
+本地产物：`document.adoptedStyleSheets` 0 份、页面 shadow 2 份 sheet、两个 `<vaadin-button>` 宿主
+background `rgb(37, 99, 235)` / color `rgb(255, 255, 255)` / padding `9px 18px` / radius `8px`、状态行
+`Clicks: 0`；切语言后区块标题变「1. 被封装出来的元素」、状态行变「点击次数: 0」、按钮文案变 EN，两种语言
+截图核对无 console error。上线后 CI run `44031362095` 与 Pages run `44031368233` 均成功；线上
+`https://shijianjs.github.io/ktjs-wrapper-template/demo/` 复测同一组数值（0 份 document sheet、
+`[style]` 只有 `BODY`、页面 shadow 2 份、两个 `<vaadin-button>` background `rgb(37, 99, 235)`、状态行
+`Clicks: 0`），切语言后就地变成「1. 被封装出来的元素 / 点击次数: 0 / EN」，无 console error、无失败请求。
 
 ## 明确不做
 
