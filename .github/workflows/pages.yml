@@ -1,11 +1,9 @@
 name: Deploy the documentation site
 
 on:
-  # Every commit on main is publishable: the site is the documentation, the demo and the API
-  # reference for the version that is released from the same branch.
-  push:
-    branches: [main]
-  # Deploying on demand stays available for a manual re-run of the same commit.
+  # Deploying is a manual action (`gh workflow run pages.yml`): a push to main no longer republishes
+  # the site, so a docs-only commit does not queue a full docs build. The site stays the documentation,
+  # demo and API reference for the branch that is released.
   workflow_dispatch:
 
 concurrency:
