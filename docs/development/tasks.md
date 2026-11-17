@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 89 |
-| 已完成 | 88 |
+| 总计 | 90 |
+| 已完成 | 89 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -261,6 +261,21 @@ Pages run `44017208903`、CI run `44017218472` 成功（push 前先 rebase 了 D
 间距、`td` padding `9px 12px`、`h2` 19px、9 行、7 个 `.output`、`document.adoptedStyleSheets` 0、`[style]`
 只有 `BODY`、九个组件各自 2–3 份 sheet、无 console error）。上线后：Pages run `44019108963`、CI run
 `44019110194` 成功；线上 `/demo/` 复测同一组数值全部命中，无 console error
+### Q. demo / docs 要求沉淀进 skill 与模板（1，2026-11-17 追加）
+
+第 84–89 项的口径只落在本项目，而同类的 demo + 文档站要求（标准 Web Component、目录分层、外壳容器化、
+class 常量就近、换语言契约、es2015、文档站配置别砍、双语与 Pages 触发）在别的 wrapper 项目里还会被重提。
+把这些收成清单并回灌：`ui-code-style` 新增第九节「页面组合：外壳是容器，页面用契约串起来」，第八节清单补
+6 条（每个组件自己的 shadow 与 `document.adoptedStyleSheets` 0 份、外壳与使用者分两级、单文件 class 常量
+就地 `private val`、`blocks` + 契约、深色底控件的常态色、浏览器实测），第十节补 2 条禁止（把组件 sheet 挂到
+document、外壳做基类或与使用者平铺），description 与 `README.md` 技能表同步；`references/packages.md` 增
+「`section/` 与 `section/sections/`」真实对照；`references/elements.md` 增第 7 节「组合式外壳与页面契约」
+（`<kmp-section>` 的 slot 结构、`PageBlock` 写法、三种反例排序）。`ktjs-wrapper-template/AGENTS.md` 把
+「样式默认私有」改写成「静态进组件 sheet + class、内联只留给运行时值」（含 class 常量就近与禁止透传包装），
+新增「页面组合：槽位外壳 + 契约接口」与「目录按层级：一对多分两级」，把「默认 Shadow DOM」改成「作用域
+不外溢」（补 `document.adoptedStyleSheets` 0 份、es2015 与产物 grep 自查、深色底常态色），并在「演示页面与
+GitHub Pages」下加 demo / docs 对齐清单（含「模板 docs 配置调优过，不要先砍再用」、双语与 Pages 触发）。
+kmp-reflect 的 skill 副本（`.agents/skills/ui-code-style/`）同步覆盖
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid

@@ -6,8 +6,8 @@
 `KmpReflectable` 的类获得接近 JVM 反射的编程体验，命名统一带 `Kmp` 前缀以和 JVM 反射区分。
 目标覆盖「KSP 能生成到哪」：JVM、Kotlin/JS、Kotlin/Wasm、Kotlin/Native。
 
-- 总计：89
-- 已完成：88
+- 总计：90
+- 已完成：89
 - 明确不做：1
 - 待完成：0
 
@@ -17,7 +17,7 @@
 
 ### 当前待办
 
-89 项已全部收敛（88 项完成、1 项明确不做）。剩下的都是 v0.2 候选，见
+90 项已全部收敛（89 项完成、1 项明确不做）。剩下的都是 v0.2 候选，见
 [technical-decisions.md](docs/development/technical-decisions.md) 末节：
 
 - [ ] `androidTarget` 发布，让 Android 消费方拿到自己的变体
