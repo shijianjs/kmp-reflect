@@ -245,7 +245,9 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 方法引用），挂载与换语言都走循环，新增区块只加一行。验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution`、
 `:demo:e2eTest`（6 用例 / 18 断言）、`:demo:detekt`（0 findings）通过；产物实测与第 87 项一致
 （外壳 36px 间距、`td` padding `9px 12px`、`h2` 19px、9 行、7 个 `.output`、`document.adoptedStyleSheets` 0、
-`[style]` 只有 `BODY`、无 console error），说明常量下放与列表循环没有改变外观或行为
+`[style]` 只有 `BODY`、无 console error），说明常量下放与列表循环没有改变外观或行为。上线后：
+Pages run `44017208903`、CI run `44017218472` 成功（push 前先 rebase 了 Dependabot 的
+`actions/cache` 5→6 提交），线上 `/demo/` 复测同一组数值全部命中，无 console error
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid
