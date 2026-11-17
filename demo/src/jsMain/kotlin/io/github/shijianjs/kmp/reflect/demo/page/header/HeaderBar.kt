@@ -7,6 +7,7 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
 import io.github.shijianjs.kmp.reflect.demo.page.theme.accent
@@ -56,7 +57,7 @@ private val LANG_CLASS: ClassName = ClassName("lang-switch")
  * it to apply the current language's translation. The button's label says which language it switches *to*,
  * which is why it is one of the nodes [applyTranslation] rewrites.
  */
-internal class HeaderBar : CustomElementAdapter() {
+internal class HeaderBar : CustomElementAdapter(), PageBlock {
     /** What a click on the language button means to the page; the component does not know the page. */
     var onSwitch: (() -> Unit)? = null
 
@@ -87,7 +88,7 @@ internal class HeaderBar : CustomElementAdapter() {
         shadow.appendChild(switchButton)
     }
 
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         titleElement.textContent = translation.title
         subtitleElement.textContent = translation.subtitle
         switchButton.textContent = translation.switchLabel

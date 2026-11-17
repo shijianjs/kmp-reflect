@@ -7,6 +7,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Person
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
@@ -22,7 +23,7 @@ import web.dom.TagName
  * The values are fixed by the time the section is built; only their labels depend on the language, so
  * [applyTranslation] rewrites the lines instead of repeating the reflective calls.
  */
-internal class InvocationSection : CustomElementAdapter() {
+internal class InvocationSection : CustomElementAdapter(), PageBlock {
     private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
@@ -54,7 +55,7 @@ internal class InvocationSection : CustomElementAdapter() {
         applyTranslation(english)
     }
 
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         shell.setText(translation.invocationHeading, translation.invocationHint)
         list.setLines(
             listOfNotNull(

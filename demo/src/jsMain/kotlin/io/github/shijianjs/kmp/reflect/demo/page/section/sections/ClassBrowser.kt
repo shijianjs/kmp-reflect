@@ -9,6 +9,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
@@ -99,7 +100,7 @@ private class ClassRow(
  * header and re-draws the detail. Rules live in this element's own sheet, adopted by its shadow root,
  * so they cannot reach any other component.
  */
-internal class ClassBrowser : CustomElementAdapter() {
+internal class ClassBrowser : CustomElementAdapter(), PageBlock {
     private val shell = sectionShellTag().createElement()
 
     private val headRow: HTMLTableRowElement = HtmlTagName.tr.createElement()
@@ -155,7 +156,7 @@ internal class ClassBrowser : CustomElementAdapter() {
     }
 
     /** Heading, hint, column labels and the language-dependent cell text. */
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         this.translation = translation
         shell.setText(translation.classesHeading, translation.classesHint)
         headRow.replaceChildren(

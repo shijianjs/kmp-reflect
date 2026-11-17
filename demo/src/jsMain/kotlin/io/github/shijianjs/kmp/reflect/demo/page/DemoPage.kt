@@ -34,10 +34,24 @@ import web.dom.TagName
 import web.html.HTMLElement
 
 /**
+ * A block the page mounts and, on a language switch, re-labels in place.
+ *
+ * Every implementation is a custom element, so the block *is* its node: [node] saves calling sites
+ * from holding a second, parallel list of elements. Implementations only have to say how they change
+ * their own text — the page decides when.
+ */
+internal interface PageBlock {
+    /** The block as the node the page appends; a component is its own element. */
+    val node: HTMLElement get() = this as HTMLElement
+
+    fun applyTranslation(translation: Translation)
+}
+
+/**
  * `<kmp-demo-page>`: one header, eight sections, and the language switch that re-labels them in place.
  *
  * Every section is its own custom element with its own shadow root and its own sheet; this element
- * only composes them, owns the current language, and walks the sections with `applyTranslation` when it
+ * only composes them, owns the current language, and walks [blocks] with `applyTranslation` when it
  * changes. No node is recreated and no metadata is re-read on a switch.
  */
 internal class DemoPage : CustomElementAdapter() {
@@ -60,21 +74,21 @@ internal class DemoPage : CustomElementAdapter() {
     private val limitations = limitationsSectionTag().createElement()
 
     /**
-     * The blocks in render order, each paired with the method that re-labels it.
+     * The blocks in render order.
      *
-     * One list instead of two parallel ones: a block cannot be mounted without also being registered
-     * for translation, and adding the next section is a single line here.
+     * One list, not one list of elements plus one of callbacks: a block is mounted and re-labelled
+     * through the same contract, and adding the next section is a single line here.
      */
-    private val blocks: List<Block> = listOf(
-        Block(header, header::applyTranslation),
-        Block(browser, browser::applyTranslation),
-        Block(invocation, invocation::applyTranslation),
-        Block(proxy, proxy::applyTranslation),
-        Block(resources, resources::applyTranslation),
-        Block(annotations, annotations::applyTranslation),
-        Block(enums, enums::applyTranslation),
-        Block(nested, nested::applyTranslation),
-        Block(limitations, limitations::applyTranslation),
+    private val blocks: List<PageBlock> = listOf(
+        header,
+        browser,
+        invocation,
+        proxy,
+        resources,
+        annotations,
+        enums,
+        nested,
+        limitations,
     )
 
     /** The page's language; named `currentLang` because `HTMLElement` already owns `lang`. */
@@ -87,7 +101,7 @@ internal class DemoPage : CustomElementAdapter() {
 
         // The host is the page: its own sheet carries the page box, the reset gives it a block display.
         val shadow = attachStyledShadow(RESET, PAGE_SHEET)
-        blocks.forEach { block -> shadow.appendChild(block.element) }
+        blocks.forEach { block -> shadow.appendChild(block.node) }
     }
 
     override fun connectedCallback() {
@@ -100,11 +114,8 @@ internal class DemoPage : CustomElementAdapter() {
     }
 
     private fun applyTranslation(translation: Translation) {
-        blocks.forEach { block -> block.relabel(translation) }
+        blocks.forEach { block -> block.applyTranslation(translation) }
     }
-
-    /** A mounted block: the element the page appends, plus the way to re-label it in place. */
-    private class Block(val element: HTMLElement, val relabel: (Translation) -> Unit)
 
     companion object : CustomElementReference<DemoPage>(DemoPage::class.js) {
         val NAME: TagName<DemoPage> = TagName("kmp-demo-page")

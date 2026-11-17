@@ -4,6 +4,7 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
@@ -14,7 +15,7 @@ import web.components.CustomElementReference
 import web.dom.TagName
 
 /** `<kmp-limitations>`: what the page itself demonstrates as a limit, one line per limitation. */
-internal class LimitationsSection : CustomElementAdapter() {
+internal class LimitationsSection : CustomElementAdapter(), PageBlock {
     private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
@@ -26,7 +27,7 @@ internal class LimitationsSection : CustomElementAdapter() {
         applyTranslation(english)
     }
 
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         shell.setText(translation.limitationsHeading, "")
         list.setLines(translation.limitations)
     }

@@ -5,6 +5,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClasses
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
@@ -20,7 +21,7 @@ import web.dom.TagName
  * Matching happens by qualified name, so this section also demonstrates that annotation scanning
  * needs no runtime reflection at all.
  */
-internal class AnnotationSection : CustomElementAdapter() {
+internal class AnnotationSection : CustomElementAdapter(), PageBlock {
     private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
@@ -43,7 +44,7 @@ internal class AnnotationSection : CustomElementAdapter() {
         applyTranslation(english)
     }
 
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         shell.setText(translation.annotationHeading, translation.annotationHint)
         list.setLines(lines.ifEmpty { listOf(translation.noAnnotation) })
     }

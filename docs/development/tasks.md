@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 88 |
-| 已完成 | 87 |
+| 总计 | 89 |
+| 已完成 | 88 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -248,6 +248,18 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 `[style]` 只有 `BODY`、无 console error），说明常量下放与列表循环没有改变外观或行为。上线后：
 Pages run `44017208903`、CI run `44017218472` 成功（push 前先 rebase 了 Dependabot 的
 `actions/cache` 5→6 提交），线上 `/demo/` 复测同一组数值全部命中，无 console error
+### P. `applyTranslation` 抽成 `PageBlock` 契约（1，2026-11-17 追加）
+
+第 88 项把重复调用收成 `blocks: List<Block>`，但 `Block` 里仍是「元素 + `::applyTranslation`」的配对，
+契约还落在页面这边、组件自己并不声明「我能被换语言」。改为接口：`page/DemoPage.kt` 里
+`internal interface PageBlock` 声明 `val node: HTMLElement get() = this as HTMLElement`（实现者都是自定义
+元素，默认实现里一次 cast，九个组件零样板）与 `fun applyTranslation(translation: Translation)`；header 与
+八个区块改成 `: CustomElementAdapter(), PageBlock` 并给该方法加 `override`，`DemoPage` 只持有一个
+`blocks: List<PageBlock>`，`init` 与 `applyTranslation` 各自一句 `forEach`（`block.node` / `block.applyTranslation`）。
+`Block` 类、方法引用与两处 lambda 配对一并删掉。验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution`、
+`:demo:detekt`（0 findings）、`:demo:e2eTest`（6 用例 / 18 断言）通过；产物实测与第 88 项一致（外壳 36px
+间距、`td` padding `9px 12px`、`h2` 19px、9 行、7 个 `.output`、`document.adoptedStyleSheets` 0、`[style]`
+只有 `BODY`、九个组件各自 2–3 份 sheet、无 console error）
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid

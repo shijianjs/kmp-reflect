@@ -6,6 +6,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Greeter
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
@@ -23,7 +24,7 @@ import web.dom.TagName
  * handler rather than the interface. The answer is one line of the shared output list, so this
  * section needs no rules of its own.
  */
-internal class ProxySection : CustomElementAdapter() {
+internal class ProxySection : CustomElementAdapter(), PageBlock {
     private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
@@ -50,7 +51,7 @@ internal class ProxySection : CustomElementAdapter() {
         applyTranslation(english)
     }
 
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         shell.setText(translation.proxyHeading, translation.proxyHint)
         list.setLines(listOf(proxyAnswer?.let { answer -> "${translation.proxyResult}: $answer" } ?: translation.detailEmpty))
     }

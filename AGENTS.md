@@ -70,6 +70,11 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
   经 slot 显示，所以正文仍在**区块自己的 shadow 树**里、由区块的 sheet 上色，不会跑到外壳的树里。
   每个区块只 adopt 自己的 sheet（`RESET` + 自身/`OUTPUT_SHEET`），不再共用一份 `SECTION_SHEET`；
   文案类方法统一叫 `applyTranslation(translation)`，`Copy` 这个名字容易和「复制」混淆，别改回去。
+- 页面的「可挂载 + 可换语言」是一个契约，不是两份清单：`page/DemoPage.kt` 里的 `internal interface PageBlock`
+  声明 `node`（默认实现就是 `this as HTMLElement`，因为实现者都是自定义元素）与 `applyTranslation`，
+  header 与八个区块都 `: CustomElementAdapter(), PageBlock` 并 `override`。页面只持有一个
+  `blocks: List<PageBlock>`，挂载与换语言各一行 `forEach`；新增区块时加字段 + 加进这个列表即可，
+  不要回到「元素字段挨个 append + 挨个调用」或「元素列表 + lambda 列表」的老写法。
 - 组件一律 `CustomElementAdapter` 子类：`init` 里 `attachStyledShadow(RESET, 自己的 sheet …)` 建树，节点用
   `TagName<T>.createElement { }` 建、用字段持有；状态变化只改相关节点（`applyCopy` / `toggleSelection`），
   **不要**引入 `render()` 式整页重绘。`Main.kt` 先注册元数据，再按「子元素在前、`kmp-demo-page` 最后」

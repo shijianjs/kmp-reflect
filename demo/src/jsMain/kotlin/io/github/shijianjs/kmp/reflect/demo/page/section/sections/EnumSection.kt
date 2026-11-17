@@ -6,6 +6,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Shape
+import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
@@ -16,7 +17,7 @@ import web.components.CustomElementReference
 import web.dom.TagName
 
 /** `<kmp-enums>`: each enum entry, its ordinal and the real instance behind it. */
-internal class EnumSection : CustomElementAdapter() {
+internal class EnumSection : CustomElementAdapter(), PageBlock {
     private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
@@ -36,7 +37,7 @@ internal class EnumSection : CustomElementAdapter() {
         applyTranslation(english)
     }
 
-    fun applyTranslation(translation: Translation) {
+    override fun applyTranslation(translation: Translation) {
         shell.setText(translation.enumHeading, translation.enumHint)
         list.setLines(lines.ifEmpty { listOf(translation.detailEmpty) })
     }
