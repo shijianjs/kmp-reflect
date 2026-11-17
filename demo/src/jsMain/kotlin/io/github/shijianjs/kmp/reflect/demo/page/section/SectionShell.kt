@@ -8,12 +8,11 @@ import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_HINT_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.HINT_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
-import io.github.shijianjs.kmp.reflect.demo.page.theme.SECTION_HEADING_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.SECTION_HINT_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.bodyText
 import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedText
 import web.components.CustomElementReference
 import web.cssom.CSSStyleSheet
+import web.cssom.ClassName
 import web.cssom.Display
 import web.cssom.Margin
 import web.cssom.number
@@ -22,6 +21,11 @@ import web.html.HTMLHeadingElement
 import web.html.HTMLParagraphElement
 import web.html.HtmlTagName
 import web.dom.TagName
+
+/** The shell's own class names: only its shadow tree selects and carries them. */
+private val SECTION_HEADING_CLASS: ClassName = ClassName("section-heading")
+
+private val SECTION_HINT_CLASS: ClassName = ClassName("section-hint")
 
 /**
  * `<kmp-section>`: the box every section is built inside — a heading, one line of hint, then a slot

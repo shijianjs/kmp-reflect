@@ -12,10 +12,7 @@ import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
 import io.github.shijianjs.kmp.reflect.demo.page.theme.CODE_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_ITEM_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.PREVIEW_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
-import io.github.shijianjs.kmp.reflect.demo.page.theme.RESOURCE_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.THUMB_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.hairline
 import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedText
 import io.github.shijianjs.kmp.reflect.resource.KmpResource
@@ -25,6 +22,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 import web.components.CustomElementReference
 import web.cssom.Border
 import web.cssom.CSSStyleSheet
+import web.cssom.ClassName
 import web.cssom.Cursor
 import web.cssom.Display
 import web.cssom.LineStyle
@@ -35,6 +33,13 @@ import web.dom.TagName
 import web.html.HTMLImageElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
+
+/** The resource list's own class names; `CODE_CLASS` / `OUTPUT_ITEM_CLASS` are shared, so they stay in `theme/Classes.kt`. */
+private val RESOURCE_CLASS: ClassName = ClassName("resource")
+
+private val PREVIEW_CLASS: ClassName = ClassName("preview")
+
+private val THUMB_CLASS: ClassName = ClassName("thumb")
 
 /**
  * `<kmp-resources>`: the resources the processor read from `demo/data` at compile time.

@@ -12,8 +12,8 @@
 
 | 状态 | 数量 |
 |---|---:|
-| 总计 | 87 |
-| 已完成 | 86 |
+| 总计 | 88 |
+| 已完成 | 87 |
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
@@ -233,6 +233,19 @@ csstype 类型化样式，删掉 `document.createElement("ul")` 这类魔法字�
 `https://shijianjs.github.io/kmp-reflect/demo/` 复测结果与本地一致（八个区块各有一个 `<kmp-section>`、
 外壳 2 份 sheet、正文在外壳 light DOM、`td` padding / `h2` 19px / 外壳 36px 间距 / 9 行 / 7 个 `.output`、
 无 console error）。
+### O. 就近原则：单文件 class 常量下放 + 页面挂载/换语言改列表循环（1，2026-11-17 追加）
+
+88 87 之后 `theme/Classes.kt` 仍把 25 条 class 常量挤在一处，但其中 21 条只在一个文件里出现，等于把
+「同一文件的两侧」（规则与节点）拆到了公共文件。按就近原则下放：`TITLE_CLASS` / `SUBTITLE_CLASS` /
+`LANG_CLASS` 进 `HeaderBar.kt`，`SECTION_HEADING_CLASS` / `SECTION_HINT_CLASS` 进 `SectionShell.kt`，
+`OUTPUT_CLASS` 进 `OutputList.kt`，表格与成员面板那 12 条进 `ClassBrowser.kt`，`RESOURCE_CLASS` /
+`PREVIEW_CLASS` / `THUMB_CLASS` 进 `ResourcesSection.kt`，一律写成文件私有的 `private val`；`Classes.kt`
+只留真正跨文件的 `HINT_CLASS`、`DETAIL_HINT_CLASS`、`OUTPUT_ITEM_CLASS`、`CODE_CLASS`。同时 `DemoPage`
+的 `init` 与 `applyTranslation` 不再逐行重复：改成一个 `blocks: List<Block>`（元素 + `::applyTranslation`
+方法引用），挂载与换语言都走循环，新增区块只加一行。验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution`、
+`:demo:e2eTest`（6 用例 / 18 断言）、`:demo:detekt`（0 findings）通过；产物实测与第 87 项一致
+（外壳 36px 间距、`td` padding `9px 12px`、`h2` 19px、9 行、7 个 `.output`、`document.adoptedStyleSheets` 0、
+`[style]` 只有 `BODY`、无 console error），说明常量下放与列表循环没有改变外观或行为
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid

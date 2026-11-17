@@ -8,10 +8,7 @@ import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
-import io.github.shijianjs.kmp.reflect.demo.page.theme.LANG_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
-import io.github.shijianjs.kmp.reflect.demo.page.theme.SUBTITLE_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.TITLE_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.accent
 import io.github.shijianjs.kmp.reflect.demo.page.theme.bodyText
 import io.github.shijianjs.kmp.reflect.demo.page.theme.hairline
@@ -21,6 +18,7 @@ import web.components.CustomElementReference
 import web.cssom.AlignItems
 import web.cssom.Border
 import web.cssom.CSSStyleSheet
+import web.cssom.ClassName
 import web.cssom.Cursor
 import web.cssom.Display
 import web.cssom.FlexWrap
@@ -43,6 +41,13 @@ import web.html.HTMLParagraphElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
 import web.html.button
+
+/** The header's own class names: no other file selects or carries them, so they live here. */
+private val TITLE_CLASS: ClassName = ClassName("title")
+
+private val SUBTITLE_CLASS: ClassName = ClassName("subtitle")
+
+private val LANG_CLASS: ClassName = ClassName("lang-switch")
 
 /**
  * `<kmp-demo-header>`: the title, one line of description and the language button.

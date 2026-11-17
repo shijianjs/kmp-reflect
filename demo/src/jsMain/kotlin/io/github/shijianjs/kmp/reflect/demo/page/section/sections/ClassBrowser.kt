@@ -12,22 +12,10 @@ import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
-import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_MUTED_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.BADGE_OK_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.CELL_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.CODE_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_HEADING_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_HINT_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.HEAD_CELL_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.HINT_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.MEMBER_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.MEMBER_LIST_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
-import io.github.shijianjs.kmp.reflect.demo.page.theme.ROW_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.SELECTED_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.TABLE_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.hairline
 import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedFill
 import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedText
@@ -40,6 +28,7 @@ import web.components.CustomElementReference
 import web.cssom.Border
 import web.cssom.BorderCollapse
 import web.cssom.CSSStyleSheet
+import web.cssom.ClassName
 import web.cssom.Cursor
 import web.cssom.FontFamily
 import web.cssom.FontWeight
@@ -63,6 +52,36 @@ import web.html.HTMLTableRowElement
 import web.html.HTMLTableSectionElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
+
+/**
+ * The browser's own class names: the table, its cells, the selectable row and the member panel are
+ * selected only in this file. `CODE_CLASS`, `HINT_CLASS` and `DETAIL_HINT_CLASS` are shared with the
+ * resources section and the section shell, so they stay in `theme/Classes.kt`.
+ */
+private val TABLE_CLASS: ClassName = ClassName("class-table")
+
+private val CELL_CLASS: ClassName = ClassName("cell")
+
+private val HEAD_CELL_CLASS: ClassName = ClassName("cell-head")
+
+/** A selectable table row; [SELECTED_CLASS] is toggled by this element as rows are picked. */
+private val ROW_CLASS: ClassName = ClassName("row")
+
+private val SELECTED_CLASS: ClassName = ClassName("is-selected")
+
+private val DETAIL_CLASS: ClassName = ClassName("detail")
+
+private val DETAIL_HEADING_CLASS: ClassName = ClassName("detail-heading")
+
+private val MEMBER_CLASS: ClassName = ClassName("member")
+
+private val MEMBER_LIST_CLASS: ClassName = ClassName("member-list")
+
+private val BADGE_CLASS: ClassName = ClassName("badge")
+
+private val BADGE_OK_CLASS: ClassName = ClassName("badge-ok")
+
+private val BADGE_MUTED_CLASS: ClassName = ClassName("badge-muted")
 
 /** One reflected class in the table, with the two cells whose text is language-dependent. */
 private class ClassRow(

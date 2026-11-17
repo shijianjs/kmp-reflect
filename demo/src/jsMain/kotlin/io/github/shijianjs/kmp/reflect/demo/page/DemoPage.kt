@@ -31,6 +31,7 @@ import web.cssom.number
 import web.cssom.px
 import web.cssom.rem
 import web.dom.TagName
+import web.html.HTMLElement
 
 /**
  * `<kmp-demo-page>`: one header, eight sections, and the language switch that re-labels them in place.
@@ -58,6 +59,24 @@ internal class DemoPage : CustomElementAdapter() {
 
     private val limitations = limitationsSectionTag().createElement()
 
+    /**
+     * The blocks in render order, each paired with the method that re-labels it.
+     *
+     * One list instead of two parallel ones: a block cannot be mounted without also being registered
+     * for translation, and adding the next section is a single line here.
+     */
+    private val blocks: List<Block> = listOf(
+        Block(header, header::applyTranslation),
+        Block(browser, browser::applyTranslation),
+        Block(invocation, invocation::applyTranslation),
+        Block(proxy, proxy::applyTranslation),
+        Block(resources, resources::applyTranslation),
+        Block(annotations, annotations::applyTranslation),
+        Block(enums, enums::applyTranslation),
+        Block(nested, nested::applyTranslation),
+        Block(limitations, limitations::applyTranslation),
+    )
+
     /** The page's language; named `currentLang` because `HTMLElement` already owns `lang`. */
     private var currentLang: Lang = Lang.EN
 
@@ -68,15 +87,7 @@ internal class DemoPage : CustomElementAdapter() {
 
         // The host is the page: its own sheet carries the page box, the reset gives it a block display.
         val shadow = attachStyledShadow(RESET, PAGE_SHEET)
-        shadow.appendChild(header)
-        shadow.appendChild(browser)
-        shadow.appendChild(invocation)
-        shadow.appendChild(proxy)
-        shadow.appendChild(resources)
-        shadow.appendChild(annotations)
-        shadow.appendChild(enums)
-        shadow.appendChild(nested)
-        shadow.appendChild(limitations)
+        blocks.forEach { block -> shadow.appendChild(block.element) }
     }
 
     override fun connectedCallback() {
@@ -89,16 +100,11 @@ internal class DemoPage : CustomElementAdapter() {
     }
 
     private fun applyTranslation(translation: Translation) {
-        header.applyTranslation(translation)
-        browser.applyTranslation(translation)
-        invocation.applyTranslation(translation)
-        proxy.applyTranslation(translation)
-        resources.applyTranslation(translation)
-        annotations.applyTranslation(translation)
-        enums.applyTranslation(translation)
-        nested.applyTranslation(translation)
-        limitations.applyTranslation(translation)
+        blocks.forEach { block -> block.relabel(translation) }
     }
+
+    /** A mounted block: the element the page appends, plus the way to re-label it in place. */
+    private class Block(val element: HTMLElement, val relabel: (Translation) -> Unit)
 
     companion object : CustomElementReference<DemoPage>(DemoPage::class.js) {
         val NAME: TagName<DemoPage> = TagName("kmp-demo-page")

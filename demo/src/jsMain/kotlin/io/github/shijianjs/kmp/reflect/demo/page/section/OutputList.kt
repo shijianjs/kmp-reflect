@@ -2,15 +2,18 @@ package io.github.shijianjs.kmp.reflect.demo.page.section
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_CLASS
 import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_ITEM_CLASS
 import web.cssom.CSSStyleSheet
+import web.cssom.ClassName
 import web.cssom.Margin
 import web.cssom.Padding
 import web.cssom.number
 import web.cssom.px
 import web.html.HTMLElement
 import web.html.HtmlTagName
+
+/** The list's own class name; the item class is shared, so it stays in `theme/Classes.kt`. */
+private val OUTPUT_CLASS: ClassName = ClassName("output")
 
 /**
  * A list of plain lines, which is the whole body of most sections.

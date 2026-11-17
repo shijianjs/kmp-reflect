@@ -83,8 +83,11 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
   是唯一共享的那份（`:host{display:block}` + `box-sizing`）。`document.adoptedStyleSheets` 保持为空——
   全局 adopt 等于没有作用域，正是这一轮要避免的。`inlineStyle` 只用于运行时才知道、会频繁变的那一两个
   属性，理由是性能：样式与 DOM 实例一对多，一条 class 规则覆盖所有同类节点。
-- 每个 class 标记都是 `theme/Classes.kt` 里的一条 `internal val X_CLASS: ClassName`，调用点写
-  `classList.add(X_CLASS)`。**不要**加 `addClass("row")` 这类把字符串透传一层的包装（`classList.add`
+- class 标记按「有几个文件用」分流：**两个及以上文件共用的**（`HINT_CLASS`、`DETAIL_HINT_CLASS`、
+  `OUTPUT_ITEM_CLASS`、`CODE_CLASS`）放 `theme/Classes.kt`，这些是规则在一个文件、节点在另一个文件的
+  情形；**只在一个文件里出现的**（表头三件套、`<kmp-section>` 的 heading/hint、表格与成员面板的十来个）
+  就地在该文件里写成 `private val X_CLASS: ClassName`，和它自己的 sheet 挨着。调用点一律
+  `classList.add(X_CLASS)`，**不要**加 `addClass("row")` 这类把字符串透传一层的包装（`classList.add`
   本来就只吃 `ClassName`，包一层反而让拼错的类名照样编译）。
 - 会随 `:hover` 变的属性（背景、边框色、文字色）必须在 sheet 里（内联优先级更高，会盖掉 hover 规则）。
   `<button>` 这类 UA 自带 `buttontext` 颜色的控件必须显式给 `color`，否则在深色底上看不见。
