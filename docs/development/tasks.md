@@ -259,7 +259,8 @@ Pages run `44017208903`、CI run `44017218472` 成功（push 前先 rebase 了 D
 `Block` 类、方法引用与两处 lambda 配对一并删掉。验证：`:demo:compileKotlinJs`、`:demo:jsBrowserDistribution`、
 `:demo:detekt`（0 findings）、`:demo:e2eTest`（6 用例 / 18 断言）通过；产物实测与第 88 项一致（外壳 36px
 间距、`td` padding `9px 12px`、`h2` 19px、9 行、7 个 `.output`、`document.adoptedStyleSheets` 0、`[style]`
-只有 `BODY`、九个组件各自 2–3 份 sheet、无 console error）
+只有 `BODY`、九个组件各自 2–3 份 sheet、无 console error）。上线后：Pages run `44019108963`、CI run
+`44019110194` 成功；线上 `/demo/` 复测同一组数值全部命中，无 console error
 83 的验证：`:docs:docusaurusBuild` 两种 locale 均生成；`pagesSite` 产出 `/`、`/zh-Hans/`、`/demo/`、
 `/api/` 与 `/ktjs-client/`（zh-Hans 下同样有）。Playwright 实测组装后的站点：`<ktjs-hero>` /
 `<ktjs-features>` / `<ktjs-next-steps>` 都在 hydration 后升级出 shadow root，`guide/platforms` 的 mermaid
