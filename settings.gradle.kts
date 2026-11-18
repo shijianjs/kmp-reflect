@@ -27,7 +27,19 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         // Same reasoning as above: the wrapper klib of a SNAPSHOT version comes from `mavenLocal`.
+        // The trap: a POM-only `kotlin-stdlib` in the local repository has no JS variant, and Gradle
+        // does not fall back once it has found metadata — the compiler then fails on
+        // `Unresolved reference 'js'` in a file that never mentions it. Keep the Kotlin coordinates
+        // pinned to Central so a stray local POM cannot shadow them.
         mavenLocal()
+        exclusiveContent {
+            forRepository { mavenCentral() }
+            filter {
+                includeGroup("org.jetbrains.kotlin-wrappers")
+                includeModule("org.jetbrains.kotlin", "kotlin-js-plain-objects")
+                includeGroup("org.jetbrains.kotlin")
+            }
+        }
         mavenCentral()
     }
 }
