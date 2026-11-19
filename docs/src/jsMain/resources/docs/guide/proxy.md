@@ -21,6 +21,16 @@ A proxy is generated when **all** of these hold:
 
 When a condition fails, no proxy class is written, `KmpClass.isProxyable` is `false`, `newProxy` throws
 `KmpReflectException`, and the processor prints a warning naming the reason.
+```mermaid
+flowchart LR
+  I["@KmpReflect fun interface Greeter"] -->|"KSP at build time"| G["generated GreeterProxy<br/>(a real Kotlin class)"]
+  G -->|"every call"| H["KmpInvocationHandler<br/>proxy, function, arguments"]
+  H -->|"return value / exception"| C["caller"]
+  I -->|"no proxy written"| N["KmpClass.isProxyable = false<br/>newProxy throws, processor warns"]
+```
+
+The proxy is compiled, not reflected: on targets without `Proxy.newProxyInstance` the call still goes
+through a class the compiler checked.
 
 ## Using one
 

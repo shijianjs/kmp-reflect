@@ -20,6 +20,15 @@ JVM 的 `Proxy.newProxyInstance` 在别的目标上不存在。这里的做法�
 
 任一条件不满足就不会生成代理类、`KmpClass.isProxyable` 为 `false`、`newProxy` 抛出
 `KmpReflectException`，同时处理器会打印一条说明原因的警告。
+```mermaid
+flowchart LR
+  I["@KmpReflect fun interface Greeter"] -->|"构建期 KSP"| G["生成的 GreeterProxy<br/>（真实 Kotlin 类）"]
+  G -->|"每次调用"| H["KmpInvocationHandler<br/>proxy、function、arguments"]
+  H -->|"返回值 / 异常"| C["调用方"]
+  I -->|"不生成代理"| N["KmpClass.isProxyable = false<br/>newProxy 抛异常，处理器给警告"]
+```
+
+代理是编译出来的，不是反射出来的：在没有 `Proxy.newProxyInstance` 的目标上，调用照样走一个被编译器检查过的类。
 
 ## 用法
 
