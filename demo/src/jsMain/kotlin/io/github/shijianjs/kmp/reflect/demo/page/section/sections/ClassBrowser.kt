@@ -12,19 +12,18 @@ import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
-import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
-import io.github.shijianjs.kmp.reflect.demo.page.theme.CODE_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.DETAIL_HINT_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.HINT_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
-import io.github.shijianjs.kmp.reflect.demo.page.theme.hairline
-import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedFill
-import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedText
-import io.github.shijianjs.kmp.reflect.demo.page.theme.okFill
-import io.github.shijianjs.kmp.reflect.demo.page.theme.okText
-import io.github.shijianjs.kmp.reflect.demo.page.theme.panel
-import io.github.shijianjs.kmp.reflect.demo.page.theme.panelStrong
-import io.github.shijianjs.kmp.reflect.demo.page.theme.selectedFill
+import io.github.shijianjs.kmp.reflect.demo.style.CODE_CLASS
+import io.github.shijianjs.kmp.reflect.demo.style.DETAIL_HINT_CLASS
+import io.github.shijianjs.kmp.reflect.demo.style.HINT_CLASS
+import io.github.shijianjs.kmp.reflect.demo.style.RESET
+import io.github.shijianjs.kmp.reflect.demo.style.hairline
+import io.github.shijianjs.kmp.reflect.demo.style.mutedFill
+import io.github.shijianjs.kmp.reflect.demo.style.mutedText
+import io.github.shijianjs.kmp.reflect.demo.style.okFill
+import io.github.shijianjs.kmp.reflect.demo.style.okText
+import io.github.shijianjs.kmp.reflect.demo.style.panel
+import io.github.shijianjs.kmp.reflect.demo.style.panelStrong
+import io.github.shijianjs.kmp.reflect.demo.style.selectedFill
 import web.components.CustomElementReference
 import web.cssom.Border
 import web.cssom.BorderCollapse
@@ -101,7 +100,6 @@ private class ClassRow(
  * so they cannot reach any other component.
  */
 internal class ClassBrowser : CustomElementAdapter(), PageBlock {
-    private val shell = sectionShellTag().createElement()
 
     private val headRow: HTMLTableRowElement = HtmlTagName.tr.createElement()
 
@@ -133,7 +131,6 @@ internal class ClassBrowser : CustomElementAdapter(), PageBlock {
 
     init {
         val shadow = attachStyledShadow(RESET, BROWSER_SHEET)
-        shadow.appendChild(shell)
 
         KmpClasses.all().forEach { kmpClass ->
             val members = cell()
@@ -150,15 +147,14 @@ internal class ClassBrowser : CustomElementAdapter(), PageBlock {
             bodyRows.appendChild(row)
         }
 
-        shell.appendChild(table)
-        shell.appendChild(detailPanel)
+        shadow.appendChild(table)
+        shadow.appendChild(detailPanel)
         applyTranslation(english)
     }
 
     /** Heading, hint, column labels and the language-dependent cell text. */
     override fun applyTranslation(translation: Translation) {
         this.translation = translation
-        shell.setText(translation.classesHeading, translation.classesHint)
         headRow.replaceChildren(
             headerCell(translation.columnName),
             headerCell(translation.columnKind),

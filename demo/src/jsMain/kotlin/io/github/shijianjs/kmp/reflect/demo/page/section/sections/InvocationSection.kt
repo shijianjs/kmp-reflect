@@ -12,8 +12,7 @@ import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
-import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
+import io.github.shijianjs.kmp.reflect.demo.style.RESET
 import web.components.CustomElementReference
 import web.dom.TagName
 
@@ -24,7 +23,6 @@ import web.dom.TagName
  * [applyTranslation] rewrites the lines instead of repeating the reflective calls.
  */
 internal class InvocationSection : CustomElementAdapter(), PageBlock {
-    private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
 
@@ -35,8 +33,7 @@ internal class InvocationSection : CustomElementAdapter(), PageBlock {
 
     init {
         val shadow = attachStyledShadow(RESET, OUTPUT_SHEET)
-        shadow.appendChild(shell)
-        shell.appendChild(list.element)
+        shadow.appendChild(list.element)
 
         val personClass: KmpClass? =
             KmpClasses.byNameOrNull("io.github.shijianjs.kmp.reflect.demo.model.Person")
@@ -56,7 +53,6 @@ internal class InvocationSection : CustomElementAdapter(), PageBlock {
     }
 
     override fun applyTranslation(translation: Translation) {
-        shell.setText(translation.invocationHeading, translation.invocationHint)
         list.setLines(
             listOfNotNull(
                 constructed?.let { value -> "${translation.constructed}: $value" } ?: translation.detailEmpty,

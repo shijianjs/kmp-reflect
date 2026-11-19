@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Demo of kmp-reflect: KSP-generated metadata for Kotlin Multiplatform, with dynamic proxies and inlined classpath resources.">
     <title>kmp-reflect demo</title>
+    <link rel="icon" href="img/kmp-reflect-logo.png">
+    <!-- Lumo's design tokens and the utility classes the shell uses; copied from the npm workspace. -->
+    <link rel="stylesheet" href="lumo.css">
+    <link rel="stylesheet" href="utility.css">
     <script src="demo.js" defer></script>
 </head>
-<body style="margin: 0; background: #0f1115; color: #e5e7eb">
+<body>
+<!--
+  The shell is named here, not created by the script: `main` defines the tag and mounts the menu into
+  the element the browser built, so there is exactly one `<ktjs-demo-layout>` on the page.
+-->
+<ktjs-demo-layout id="demo"></ktjs-demo-layout>
 <noscript>This demo is written in Kotlin/JS and needs JavaScript enabled.</noscript>
-<!-- The page is a custom element like everything inside it; `class="page"` is the hook the browser
-     suite asserts on. It upgrades when demo.js defines the tag, and renders itself into its shadow. -->
-<kmp-demo-page id="demo" class="page"></kmp-demo-page>
 </body>
 </html>

@@ -7,6 +7,31 @@ plugins {
     id("io.github.shijianjs.kmp-reflect")
 }
 
+// The demo shell (`ktjs-demo-kit`) is built from Vaadin's published wrapper, which ships the
+// JavaScript side of `@vaadin/vaadin-lumo-styles` but not the CSS: that is a page-level `<link>`,
+// taken from the npm workspace the Kotlin/JS plugin installs at the root.
+val lumoStyles = rootProject.layout.buildDirectory.dir("js/node_modules/@vaadin/vaadin-lumo-styles/dist")
+
+val copyLumoStyles = tasks.register<Copy>("copyLumoStyles") {
+    description = "Copies the pre-built Lumo stylesheet into the demo resources."
+    dependsOn(":kotlinNpmInstall")
+    from(lumoStyles) {
+        include("lumo.css")
+        include("utility.css")
+    }
+    into(layout.buildDirectory.dir("generated/lumo"))
+}
+
+// The brand image lives with the site's static files and is copied in here, so the demo and the
+// documentation cannot drift apart.
+val brandAssets = tasks.register<Copy>("brandAssets") {
+    from(rootProject.file("docs/src/jsMain/resources/static/img")) {
+        // Keep the same `img/` layout the site uses, so both pages reference `img/<logo>.png`.
+        into("img")
+    }
+    into(layout.buildDirectory.dir("generated/brand"))
+}
+
 // The demo is the integration test for the processor: the same annotated classes in `commonMain` are
 // reflected for every target. The browser page exercises the JS target; the assertions in
 // `commonTest` run on each target the host can execute (a Windows checkout gets mingwX64, Linux gets
@@ -42,6 +67,7 @@ kotlin {
 
     // Kotlin/Wasm has no page of its own here: it is covered by the same assertions in `commonTest`,
     // which is what proves the generated metadata compiles and resolves on that backend too.
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
     wasmJs {
         nodejs()
     }
@@ -59,13 +85,19 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
-        jsMain.dependencies {
-            // DOM access goes through kotlin-browser's typed `web.*` API; detekt forbids mixing it
-            // with `kotlinx.browser.*` or the JDK's `org.w3c.dom.*`.
-            implementation("org.jetbrains.kotlin-wrappers:kotlin-browser:2026.11.1")
-            // The page reads its CSS through dom-kit's typed DSL: `createElement` narrowed by tag,
-            // `inlineStyle` over csstype, and one `cssSheet` for the rules inline style cannot express.
-            implementation("io.github.shijianjs:ktjs-dom-kit:0.1.0")
+        jsMain {
+            // `srcDir(task)` contributes the directory, not the dependency; `jsProcessResources`
+            // depends on the tasks below for the same reason, or a clean build copies nothing.
+            resources.srcDir(brandAssets)
+            resources.srcDir(copyLumoStyles)
+
+            dependencies {
+                // The demo shell: navbar, drawer, router, language and theme menus, page container. It
+                // exposes dom-kit as an `api` dependency, which is what the sections style with.
+                implementation(
+                    "io.github.shijianjs:ktjs-demo-kit-js:${providers.gradleProperty("ktjs-demo-kit.version").get()}",
+                )
+            }
         }
         jvmTest.dependencies {
             implementation("com.microsoft.playwright:playwright:1.61.0")
@@ -146,3 +178,9 @@ tasks.register<Test>("reflectionTest") {
 // The Playwright classes belong to the e2e task; leaving them in `jvmTest` would make `build` need
 // a browser.
 tasks.named<Test>("jvmTest") { enabled = false }
+
+// `srcDir(task)` contributes the directory, not the dependency: the resources have to be produced
+// before they are processed, or a clean build copies an empty `img/`.
+tasks.named("jsProcessResources") {
+    dependsOn(brandAssets, copyLumoStyles)
+}

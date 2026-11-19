@@ -58,49 +58,44 @@ $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://npmmirror.com/mirrors/playwright/"
 
 ## 演示与文档
 
-- demo 页面是一组标准自定义元素，每个组件一个文件、一个 shadow root：`page/DemoPage.kt`（
-  `<kmp-demo-page>`，只做组合与语言状态）、`page/header/HeaderBar.kt`（`<kmp-demo-header>`）、
-  `page/section/SectionShell.kt` + `page/section/OutputList.kt`（前者是 `<kmp-section>` 这个框架组件，
-  后者是多数区块正文用的列表）、`page/section/sections/*.kt`（`<kmp-classes>`、`<kmp-invocation>` …
-  各区块）。目录层级就是归属：`page/` 放整页与其词汇（`theme/` 调色板与 class 常量、`lang/` 翻译文案），
-  `page/section/` 放一对多里的「一」，`page/section/sections/` 放「多」。**不要**把区块文件平铺回
-  `page/`，也**不要**给 SectionShell 做成基类——它是被组合进去的部件，不是八个区块的父类。
-- **区块的框架与正文分开**：`<kmp-section>`（`SectionShell`）自己是一个组件，shadow root 里是
-  `h2` + `p` + `<slot>`，`:host` 承担 36px 的区块间距；区块把正文节点 append 到 `<kmp-section>` 上，
-  经 slot 显示，所以正文仍在**区块自己的 shadow 树**里、由区块的 sheet 上色，不会跑到外壳的树里。
-  每个区块只 adopt 自己的 sheet（`RESET` + 自身/`OUTPUT_SHEET`），不再共用一份 `SECTION_SHEET`；
-  文案类方法统一叫 `applyTranslation(translation)`，`Copy` 这个名字容易和「复制」混淆，别改回去。
-- 页面的「可挂载 + 可换语言」是一个契约，不是两份清单：`page/DemoPage.kt` 里的 `internal interface PageBlock`
-  声明 `node`（默认实现就是 `this as HTMLElement`，因为实现者都是自定义元素）与 `applyTranslation`，
-  header 与八个区块都 `: CustomElementAdapter(), PageBlock` 并 `override`。页面只持有一个
-  `blocks: List<PageBlock>`，挂载与换语言各一行 `forEach`；新增区块时加字段 + 加进这个列表即可，
-  不要回到「元素字段挨个 append + 挨个调用」或「元素列表 + lambda 列表」的老写法。
+- demo 的外壳（顶栏、抽屉菜单、路由、语言与主题菜单、页面容器）来自
+  `io.github.shijianjs:ktjs-demo-kit-js`；demo 只写」这一页演示什么「。外壳元素 `DemoLayout` 由
+  `index.html` 里的 `<ktjs-demo-layout id="demo">` 命名，`Main.kt` 只做 `define()` 与 `mount(...)`；
+  不要再自己拼 navbar、抽屉或页头（原来的 `page/DemoPage.kt` 与 `page/header/HeaderBar.kt` 就是为此删掉的）。
+- 页面按 `Page` 组织：`page/SectionPage.kt` 是唯一的页面工厂，把「这一页的标题 / 说明（来自
+  `page/lang/Translation.kt`）」和「这一页演示的区块」拼起来。八个区块各占一条路由，`SiteMenu.kt` 一行一条。
+  外壳按路由缓存页面实例，切走再切回时区块里的状态（选中的行、展开的详情）还在。
+- 区块仍然是标准自定义元素，每个组件一个文件、一个 shadow root：`page/section/OutputList.kt`（多数区块正文用的
+  列表）、`page/section/sections/*.kt`（`<kmp-classes>`、`<kmp-invocation>` …）。目录层级就是归属：
+  `style/` 放调色板、`RESET` 与跨文件共用的 class 常量，`page/lang/` 放文案，`page/section/sections/` 放各区块。
+  **不要**把区块文件平铺回 `page/`。
+- **区块只渲染正文，标题归外壳**：原来那层 `<kmp-section>`（`SectionShell`）已删除——八个区块变成八页之后，
+  它会和页面自己的 `h1` 说同一句话。页面标题与说明来自 `Translation` 的 `*Heading` / `*Hint`，所以文案改动只
+  改一处；区块内部的 `applyTranslation(translation)` 只改它自己那几个节点。
+- 页面的「可挂载 + 可换语言」是一个契约，不是两份清单：`page/PageBlock.kt` 里的
+  `internal interface PageBlock` 声明 `node`（默认实现就是 `this as HTMLElement`，因为实现者都是自定义元素）
+  与 `applyTranslation`，八个区块都 `: CustomElementAdapter(), PageBlock` 并 `override`。
 - 组件一律 `CustomElementAdapter` 子类：`init` 里 `attachStyledShadow(RESET, 自己的 sheet …)` 建树，节点用
-  `TagName<T>.createElement { }` 建、用字段持有；状态变化只改相关节点（`applyCopy` / `toggleSelection`），
-  **不要**引入 `render()` 式整页重绘。`Main.kt` 先注册元数据，再按「子元素在前、`kmp-demo-page` 最后」
-  的顺序 define 标签——`index.html` 里已有 `<kmp-demo-page class="page">`，define 时就地升级，构造函数会
-  立刻创建子元素，所以子标签必须先定义好。
+  `TagName<T>.createElement { }` 建、用字段持有；状态变化只改相关节点（`applyTranslation` / `toggleSelection`），
+  **不要**引入 `render()` 式整页重绘。
 - **JS 目标必须 `compilerOptions { target = "es2015" }`**：默认 ES5 下 Kotlin 把类发射成
   `function X() { HTMLElement.call(this) }`，而 DOM 构造器只能 `new`，浏览器直接抛 "Please use the 'new'
   operator"，自定义元素永远不升级。这条同时是 `ktjs-dom-kit` 全仓库的设置，删了页面就白屏。
+- **颜色一律走 Lumo token**（`style/Palette.kt`：`var(--lumo-*)` + 浅色回退）。区块原来硬编码了一套深色，
+  在外壳里既不跟随主题、还会出现深底深字；自定义属性会继承进 shadow 树，所以主题切换一次重绘全站，组件里
+  **不要**写 `[data-theme]` 选择器。
 - **样式按组件分 sheet，靠 shadow root 作用域，不挂全局**：每个组件一份 `X_SHEET`（在它的
-  `companion object` 里），交给 `attachStyledShadow` 只装进自己的 shadow root；`theme/Reset.kt` 的 `RESET`
-  是唯一共享的那份（`:host{display:block}` + `box-sizing`）。`document.adoptedStyleSheets` 保持为空——
-  全局 adopt 等于没有作用域，正是这一轮要避免的。`inlineStyle` 只用于运行时才知道、会频繁变的那一两个
-  属性，理由是性能：样式与 DOM 实例一对多，一条 class 规则覆盖所有同类节点。
+  `companion object` 里），交给 `attachStyledShadow` 只装进自己的 shadow root；`style/Reset.kt` 的 `RESET`
+  是唯一共享的那份（`:host{display:block}` + `box-sizing`）。`document.adoptedStyleSheets` 保持为空。
 - class 标记按「有几个文件用」分流：**两个及以上文件共用的**（`HINT_CLASS`、`DETAIL_HINT_CLASS`、
-  `OUTPUT_ITEM_CLASS`、`CODE_CLASS`）放 `theme/Classes.kt`，这些是规则在一个文件、节点在另一个文件的
-  情形；**只在一个文件里出现的**（表头三件套、`<kmp-section>` 的 heading/hint、表格与成员面板的十来个）
-  就地在该文件里写成 `private val X_CLASS: ClassName`，和它自己的 sheet 挨着。调用点一律
-  `classList.add(X_CLASS)`，**不要**加 `addClass("row")` 这类把字符串透传一层的包装（`classList.add`
-  本来就只吃 `ClassName`，包一层反而让拼错的类名照样编译）。
+  `OUTPUT_ITEM_CLASS`、`CODE_CLASS`）放 `style/Classes.kt`；**只在一个文件里出现的**就地写成
+  `private val X_CLASS: ClassName`，和它自己的 sheet 挨着。调用点一律 `classList.add(X_CLASS)`，**不要**加
+  `addClass("row")` 这类把字符串透传一层的包装。
 - 会随 `:hover` 变的属性（背景、边框色、文字色）必须在 sheet 里（内联优先级更高，会盖掉 hover 规则）。
-  `<button>` 这类 UA 自带 `buttontext` 颜色的控件必须显式给 `color`，否则在深色底上看不见。
+  `<button>` 这类 UA 自带 `buttontext` 颜色的控件必须显式给 `color`。
 - 有限枚举的状态（选中行、invokable 徽标）用 class 切换（`.row.is-selected`、`.badge-ok`），不要内联颜色；
-  `:hover` 与选中态同时存在时，选中规则写在 hover 规则**之后**，靠同特异性下的先后顺序生效。
+  `:hover` 与选中态同时存在时，选中规则写在 hover 规则**之后**。
 - **不要**再新增 `demo.css` 之类的集中式样式表：规则跟着组件走，sheet 只是同一文件里的一个常量。
-- `index.html` 的 `class="page"` 是 e2e 断言用的挂载点标记（页面本身的盒子由 `:host` 规则决定）；body 上
-  那条 `style` 是首屏防白闪的单点底色，不是逐节点内联，别扩写。
 - 文档站点的“全功能”配置是一套，别砍：`docs/build.gradle.kts` 的 `kitBundle` / `extractKitBundle` /
   `clientModuleFunction` / `browserBundle(-Files)`、`docs/.../docs/ClientModule.kt`、
   `Config.kt` 里的 `clientModules` / `themes` / `markdown.mermaid` / `themeConfig.mermaid`。首页是

@@ -1,4 +1,4 @@
-package io.github.shijianjs.kmp.reflect.demo.page.theme
+package io.github.shijianjs.kmp.reflect.demo.style
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import web.cssom.BoxSizing

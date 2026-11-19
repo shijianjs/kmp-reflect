@@ -9,26 +9,22 @@ import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
-import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
+import io.github.shijianjs.kmp.reflect.demo.style.RESET
 import web.components.CustomElementReference
 import web.dom.TagName
 
 /** `<kmp-limitations>`: what the page itself demonstrates as a limit, one line per limitation. */
 internal class LimitationsSection : CustomElementAdapter(), PageBlock {
-    private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
 
     init {
         val shadow = attachStyledShadow(RESET, OUTPUT_SHEET)
-        shadow.appendChild(shell)
-        shell.appendChild(list.element)
+        shadow.appendChild(list.element)
         applyTranslation(english)
     }
 
     override fun applyTranslation(translation: Translation) {
-        shell.setText(translation.limitationsHeading, "")
         list.setLines(translation.limitations)
     }
 

@@ -10,12 +10,11 @@ import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
-import io.github.shijianjs.kmp.reflect.demo.page.section.sectionShellTag
-import io.github.shijianjs.kmp.reflect.demo.page.theme.CODE_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_ITEM_CLASS
-import io.github.shijianjs.kmp.reflect.demo.page.theme.RESET
-import io.github.shijianjs.kmp.reflect.demo.page.theme.hairline
-import io.github.shijianjs.kmp.reflect.demo.page.theme.mutedText
+import io.github.shijianjs.kmp.reflect.demo.style.CODE_CLASS
+import io.github.shijianjs.kmp.reflect.demo.style.OUTPUT_ITEM_CLASS
+import io.github.shijianjs.kmp.reflect.demo.style.RESET
+import io.github.shijianjs.kmp.reflect.demo.style.hairline
+import io.github.shijianjs.kmp.reflect.demo.style.mutedText
 import io.github.shijianjs.kmp.reflect.resource.KmpResource
 import io.github.shijianjs.kmp.reflect.resource.KmpResources
 import kotlin.io.encoding.Base64
@@ -51,7 +50,6 @@ private val THUMB_CLASS: ClassName = ClassName("thumb")
  */
 @OptIn(ExperimentalEncodingApi::class)
 internal class ResourcesSection : CustomElementAdapter(), PageBlock {
-    private val shell = sectionShellTag().createElement()
 
     private val list = OutputList()
 
@@ -59,8 +57,7 @@ internal class ResourcesSection : CustomElementAdapter(), PageBlock {
 
     init {
         val shadow = attachStyledShadow(RESET, OUTPUT_SHEET, RESOURCES_SHEET)
-        shadow.appendChild(shell)
-        shell.appendChild(list.element)
+        shadow.appendChild(list.element)
 
         entries = KmpResources.all().sortedBy { resource -> resource.path }.map(::entryOf)
         entries.forEach { entry -> list.element.appendChild(entry.item) }
@@ -68,7 +65,6 @@ internal class ResourcesSection : CustomElementAdapter(), PageBlock {
     }
 
     override fun applyTranslation(translation: Translation) {
-        shell.setText(translation.resourcesHeading, translation.resourcesHint)
         entries.forEach { entry ->
             entry.label.textContent =
                 "${entry.resource.path} — ${entry.resource.mimeType}, ${entry.resource.size} ${translation.resourceBytes}"

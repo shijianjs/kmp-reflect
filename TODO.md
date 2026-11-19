@@ -29,6 +29,9 @@
 
 - 源仓库是 `ktjs-wrapper-template` 的克隆，npm wrapper 相关产物已全部移除；版本改用
   `gradle.properties` 的 `kmp-reflect.version`，工作树加 `-SNAPSHOT`。
+- 演示页的外壳已换成 `ktjs-demo-kit`（`ktjs-demo-kit.version=0.1.0-SNAPSHOT`，由 `ktjs-dom-kit` 工作树
+  `publishToMavenLocal` 提供）：八个区块各占一条路由，标题与说明由 `page/lang/Translation.kt` 提供，颜色一律走
+  Lumo token，所以跟随外壳的亮暗主题。原来那层 `<kmp-section>` 与手写 header 已删除。
 - 反射元数据一律编译期内联成 Kotlin 代码，不做运行时类加载、不做资源文件读取。
 - 公开 API 一律带 `Kmp` 前缀，包名 `io.github.shijianjs.kmp.reflect`。
 - Native 目标按构建宿主声明（Windows `mingwX64` / Linux `linuxX64` / macOS Apple），交叉目标只在能

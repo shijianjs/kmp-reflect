@@ -8,23 +8,23 @@ import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Smoke checks for the demo page: the bundle loads, the metadata sections render, the language
- * switch re-renders, and nothing logs an error or fails a request.
+ * Smoke checks for the demo: the bundle loads, the shell lists every route, the metadata sections
+ * render, the language switch rewrites the page in place, and nothing logs an error or fails a request.
  *
- * The page reads only generated metadata, so a green run here means the processor also ran for the
- * JS target — that is the whole point of running the browser suite in CI.
+ * The page and its sections live in shadow trees, which Playwright's CSS engine pierces; what it does
+ * not do is find them across routes — each route has to be opened first, because the shell mounts one
+ * page at a time.
  */
 @UsePlaywright(DemoOptions::class)
 class DemoPageTest {
     @Test
-    fun `page renders the heading and stylesheet`(page: Page) {
+    fun `the shell renders the navbar, the logo and every route`(page: Page) {
         openPage(page)
 
         assertTrue(page.title().contains("kmp-reflect"), "title: ${page.title()}")
-        assertEquals("kmp-reflect", page.locator("h1.title").textContent())
-
-        val display = page.locator(".page").evaluate("(node) => getComputedStyle(node).display") as String
-        assertTrue(display != "contents", "the stylesheet applies to .page (display = $display)")
+        assertTrue(page.locator("#demo img.layout__logo").isVisible(), "the shell serves the project logo")
+        assertEquals("Reflected classes", page.locator("#demo ktjs-demo-page h1").first().textContent())
+        assertEquals(8, page.locator("#demo vaadin-side-nav-item[data-route]").count())
     }
 
     @Test
@@ -34,9 +34,7 @@ class DemoPageTest {
         val personRow = page.locator("tr.row", Page.LocatorOptions().setHasText("demo.model.Person"))
         assertTrue(personRow.count() > 0, "Person is listed among the reflected classes")
 
-        page.locator("tr.row", Page.LocatorOptions().setHasText("Person"))
-            .first()
-            .click()
+        page.locator("tr.row", Page.LocatorOptions().setHasText("Person")).first().click()
 
         val members = page.locator(".detail .member").allTextContents()
         assertTrue(members.any { it.contains("fun greet(") }, "members: $members")
@@ -47,30 +45,39 @@ class DemoPageTest {
     fun `metadata drives construction, invocation and the proxy`(page: Page) {
         openPage(page)
 
-        val output = page.locator(".output").allTextContents().joinToString(" | ")
-        assertTrue(output.contains("Hello, Ada!"), "invocation output: $output")
-        assertTrue(output.contains("proxy(greet) -> world"), "proxy output: $output")
+        navigate(page, "invocation")
+        val invocation = page.locator(".output").allTextContents().joinToString(" | ")
+        assertTrue(invocation.contains("Hello, Ada!"), "invocation output: $invocation")
+
+        navigate(page, "proxy")
+        val proxy = page.locator(".output").allTextContents().joinToString(" | ")
+        assertTrue(proxy.contains("proxy(greet) -> world"), "proxy output: $proxy")
     }
 
     @Test
-    fun `annotation scan and resources are shown`(page: Page) {
+    fun `annotation scan and inlined resources are shown`(page: Page) {
         openPage(page)
 
-        val text = page.locator(".output").allTextContents().joinToString(" | ")
-        assertTrue(text.contains("name=person"), "annotation arguments: $text")
-        assertTrue(text.contains("config.json"), "resource paths: $text")
-        assertTrue(page.locator("img.thumb").count() == 1, "the SVG resource is rendered from its bytes")
+        navigate(page, "annotations")
+        val annotations = page.locator(".output").allTextContents().joinToString(" | ")
+        assertTrue(annotations.contains("name=person"), "annotation arguments: $annotations")
+
+        navigate(page, "resources")
+        val resources = page.locator(".output").allTextContents().joinToString(" | ")
+        assertTrue(resources.contains("config.json"), "resource paths: $resources")
+        // The SVG is rendered from the bytes the processor inlined, not from a file on disk.
+        assertEquals(1, page.locator("img.thumb").count())
     }
 
     @Test
-    fun `language switch re-renders in Chinese`(page: Page) {
+    fun `language switch rewrites the page in place`(page: Page) {
         openPage(page)
 
-        page.locator(".lang-switch").click()
+        switchLanguage(page, "zh-Hans")
 
-        assertEquals("EN", page.locator(".lang-switch").textContent())
-        assertTrue(page.locator("h2").first().textContent()!!.contains("已反射的类"))
-        assertTrue(page.locator("h2").allTextContents().any { it.contains("动态代理") })
+        assertEquals("已反射的类", page.locator("#demo ktjs-demo-page h1").first().textContent())
+        // The class browser is data, not copy: the table is still there after the switch.
+        assertTrue(page.locator("tr.row").count() > 0)
     }
 
     @Test
@@ -85,6 +92,7 @@ class DemoPageTest {
         }
 
         openPage(page)
+        navigate(page, "resources")
 
         assertTrue(consoleErrors.isEmpty(), "console errors: $consoleErrors")
         assertTrue(failedRequests.isEmpty(), "failed requests: $failedRequests")
@@ -92,5 +100,17 @@ class DemoPageTest {
 
     private fun openPage(page: Page) {
         page.navigate("/", Page.NavigateOptions().setWaitUntil(WaitUntilState.NETWORKIDLE))
+    }
+
+    /** Opens a route through its sidebar item, which is also a check of the router. */
+    private fun navigate(page: Page, route: String) {
+        page.locator("#demo vaadin-side-nav-item[data-route='$route']").first().click()
+        page.waitForSelector("#demo ktjs-demo-page h1")
+    }
+
+    /** Opens the layout's language menu and picks [code]. */
+    private fun switchLanguage(page: Page, code: String) {
+        page.locator("#demo [data-menu='lang']").first().click()
+        page.locator("#demo [data-action='lang:$code']").first().click()
     }
 }

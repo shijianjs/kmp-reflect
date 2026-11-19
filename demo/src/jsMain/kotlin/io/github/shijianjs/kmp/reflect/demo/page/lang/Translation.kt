@@ -1,20 +1,19 @@
 package io.github.shijianjs.kmp.reflect.demo.page.lang
 
-/** The two languages the demo page switches between, in place, without rebuilding the page. */
-internal enum class Lang { EN, ZH }
+import io.github.shijianjs.ktjs.demo.i18n.Lang
+import io.github.shijianjs.ktjs.demo.i18n.Langs
 
 /**
- * Every string the page shows.
+ * Every string the demo's sections show, plus the heading each page is titled with.
  *
- * One instance per language, and each section copies the strings it is responsible for; switching
- * languages is a walk over the sections, not a re-render. Data that the section derives from metadata
+ * One instance per language; every section copies the strings it is responsible for, and switching
+ * languages is a walk over the pages, not a re-render. Data that a section derives from metadata
  * (a member signature, a resource path) never comes from here.
+ *
+ * The shell's own strings (site title, menu labels) live in `SiteTexts.kt` — this object is about
+ * content, that one is about the frame.
  */
 internal class Translation(
-    val langLabel: String,
-    val switchLabel: String,
-    val title: String,
-    val subtitle: String,
     val classesHeading: String,
     val classesHint: String,
     val columnName: String,
@@ -49,11 +48,7 @@ internal class Translation(
 )
 
 internal val english: Translation = Translation(
-    langLabel = "EN",
-    switchLabel = "中文",
-    title = "kmp-reflect",
-    subtitle = "JVM-like reflection for Kotlin Multiplatform, generated at compile time by KSP.",
-    classesHeading = "1. Reflected classes",
+    classesHeading = "Reflected classes",
     classesHint = "Metadata generated for the classes this module opted in. Click a row for its members.",
     columnName = "class",
     columnKind = "kind",
@@ -62,20 +57,20 @@ internal val english: Translation = Translation(
     detailHeading = "Members",
     detailEmpty = "Pick a class above.",
     noAnnotation = "(none)",
-    invocationHeading = "2. Constructing and invoking",
+    invocationHeading = "Constructing and invoking",
     invocationHint = "The constructor and functions below are called through metadata, not through direct Kotlin calls.",
     constructed = "constructed",
     called = "call result",
     propertyValue = "property",
-    proxyHeading = "3. Dynamic proxy",
+    proxyHeading = "Dynamic proxy",
     proxyHint = "A generated proxy class forwards every call to a KmpInvocationHandler.",
     proxyResult = "proxy call result",
-    resourcesHeading = "4. Inlined resources",
+    resourcesHeading = "Inlined resources",
     resourcesHint = "Read from demo/data at compile time, stored as Base64 in generated Kotlin, decoded lazily.",
     resourceBytes = "bytes",
-    annotationHeading = "5. Annotation scan",
+    annotationHeading = "Annotation scan",
     annotationHint = "Annotations are matched by qualified name, so scanning works without JVM reflection.",
-    limitationsHeading = "6. Limits you can see here",
+    limitationsHeading = "Limits you can see here",
     limitations = listOf(
         "generic functions are recorded but not invokable - look for the badge in the member list.",
         "suspend functions are callable, but only through invokeSuspend from a coroutine.",
@@ -84,19 +79,15 @@ internal val english: Translation = Translation(
     ),
     invokable = "invokable",
     notInvokable = "metadata only",
-    enumHeading = "7. Enum entries",
+    enumHeading = "Enum entries",
     enumHint = "Entries carry their ordinal and annotations, and the instance itself.",
-    nestedHeading = "8. Nested classes",
+    nestedHeading = "Nested classes",
     nestedHint = "A nested class is reflected separately, and its outer class lists it.",
     membersSummary = { constructors, functions, properties -> "$constructors ctor / $functions fun / $properties prop" },
 )
 
 internal val chinese: Translation = Translation(
-    langLabel = "中文",
-    switchLabel = "EN",
-    title = "kmp-reflect",
-    subtitle = "为 Kotlin Multiplatform 提供接近 JVM 的反射体验，元数据由 KSP 在编译期生成。",
-    classesHeading = "1. 已反射的类",
+    classesHeading = "已反射的类",
     classesHint = "本模块声明参与反射的类会生成元数据。点击一行查看成员。",
     columnName = "类",
     columnKind = "种类",
@@ -105,20 +96,20 @@ internal val chinese: Translation = Translation(
     detailHeading = "成员",
     detailEmpty = "请先在上面选择一个类。",
     noAnnotation = "（无）",
-    invocationHeading = "2. 构造与调用",
+    invocationHeading = "构造与调用",
     invocationHint = "下面的构造与函数调用都经由元数据完成，不是直接的 Kotlin 调用。",
     constructed = "构造结果",
     called = "调用结果",
     propertyValue = "属性",
-    proxyHeading = "3. 动态代理",
+    proxyHeading = "动态代理",
     proxyHint = "编译期生成的代理类把所有调用转发给 KmpInvocationHandler。",
     proxyResult = "代理调用结果",
-    resourcesHeading = "4. 内联资源",
+    resourcesHeading = "内联资源",
     resourcesHint = "编译期读取 demo/data，以 Base64 写入生成的 Kotlin，运行时惰性解码。",
     resourceBytes = "字节",
-    annotationHeading = "5. 注解扫描",
+    annotationHeading = "注解扫描",
     annotationHint = "注解按全限定名匹配，因此扫描不需要 JVM 反射。",
-    limitationsHeading = "6. 这里能看到的限制",
+    limitationsHeading = "这里能看到的限制",
     limitations = listOf(
         "泛型函数会被记录，但不可调用——看成员列表里的标记。",
         "suspend 函数可调用，但只能从协程里通过 invokeSuspend 调。",
@@ -127,11 +118,12 @@ internal val chinese: Translation = Translation(
     ),
     invokable = "可调用",
     notInvokable = "仅元数据",
-    enumHeading = "7. 枚举项",
+    enumHeading = "枚举项",
     enumHint = "枚举项带有序号、注解以及实例本身。",
-    nestedHeading = "8. 嵌套类",
+    nestedHeading = "嵌套类",
     nestedHint = "嵌套类单独反射，外层类会列出它。",
     membersSummary = { constructors, functions, properties -> "$constructors 构造 / $functions 函数 / $properties 属性" },
 )
 
-internal fun translationOf(lang: Lang): Translation = if (lang == Lang.EN) english else chinese
+/** The content strings for a shell language. */
+internal fun translationOf(lang: Lang): Translation = if (lang == Langs.ZH_HANS) chinese else english

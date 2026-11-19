@@ -2,7 +2,7 @@ package io.github.shijianjs.kmp.reflect.demo.page.section
 
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.kmp.reflect.demo.page.theme.OUTPUT_ITEM_CLASS
+import io.github.shijianjs.kmp.reflect.demo.style.OUTPUT_ITEM_CLASS
 import web.cssom.CSSStyleSheet
 import web.cssom.ClassName
 import web.cssom.Margin
