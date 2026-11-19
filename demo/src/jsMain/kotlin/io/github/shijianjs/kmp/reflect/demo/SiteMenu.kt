@@ -4,7 +4,14 @@ import io.github.shijianjs.ktjs.demo.nav.DemoMenu
 import io.github.shijianjs.ktjs.demo.nav.Entry
 import io.github.shijianjs.ktjs.demo.nav.Group
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.kmp.reflect.demo.page.sectionPage
+import io.github.shijianjs.kmp.reflect.demo.page.newAnnotationsPage
+import io.github.shijianjs.kmp.reflect.demo.page.newClassesPage
+import io.github.shijianjs.kmp.reflect.demo.page.newEnumsPage
+import io.github.shijianjs.kmp.reflect.demo.page.newInvocationPage
+import io.github.shijianjs.kmp.reflect.demo.page.newLimitsPage
+import io.github.shijianjs.kmp.reflect.demo.page.newNestedPage
+import io.github.shijianjs.kmp.reflect.demo.page.newProxyPage
+import io.github.shijianjs.kmp.reflect.demo.page.newResourcesPage
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.annotationSectionTag
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.enumSectionTag
@@ -29,28 +36,29 @@ private val COMPILER: Group = Group("compiler", "lucide:file-code")
 internal fun siteMenu(): DemoMenu = DemoMenu(
     listOf(
         Entry("classes", REFLECTION, "lucide:table") {
-            sectionPage({ it.classesHeading }, { it.classesHint }, classBrowserTag().createElement())
+            newClassesPage()
         },
         Entry("invocation", REFLECTION, "lucide:play") {
-            sectionPage({ it.invocationHeading }, { it.invocationHint }, invocationSectionTag().createElement())
+            newInvocationPage()
         },
         Entry("proxy", REFLECTION, "lucide:waypoints") {
-            sectionPage({ it.proxyHeading }, { it.proxyHint }, proxySectionTag().createElement())
+            newProxyPage()
         },
         Entry("resources", COMPILER, "lucide:package") {
-            sectionPage({ it.resourcesHeading }, { it.resourcesHint }, resourcesSectionTag().createElement())
+            newResourcesPage()
         },
         Entry("annotations", COMPILER, "lucide:tag") {
-            sectionPage({ it.annotationHeading }, { it.annotationHint }, annotationSectionTag().createElement())
+            newAnnotationsPage()
         },
         Entry("enums", COMPILER, "lucide:list") {
-            sectionPage({ it.enumHeading }, { it.enumHint }, enumSectionTag().createElement())
+            newEnumsPage()
         },
         Entry("nested", COMPILER, "lucide:folder-tree") {
-            sectionPage({ it.nestedHeading }, { it.nestedHint }, nestedSectionTag().createElement())
+            newNestedPage()
         },
         Entry("limits", COMPILER, "lucide:triangle-alert") {
-            sectionPage({ it.limitationsHeading }, { "" }, limitationsSectionTag().createElement())
+            newLimitsPage()
         },
     ),
 )
+
