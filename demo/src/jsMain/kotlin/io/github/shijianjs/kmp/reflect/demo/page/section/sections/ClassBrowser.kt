@@ -1,12 +1,12 @@
 package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.css.dsl.Pseudos
 import io.github.shijianjs.ktjs.dom.css.dsl.invoke
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
@@ -24,7 +24,6 @@ import io.github.shijianjs.kmp.reflect.demo.style.okText
 import io.github.shijianjs.kmp.reflect.demo.style.panel
 import io.github.shijianjs.kmp.reflect.demo.style.panelStrong
 import io.github.shijianjs.kmp.reflect.demo.style.selectedFill
-import web.components.CustomElementReference
 import web.cssom.Border
 import web.cssom.BorderCollapse
 import web.cssom.CSSStyleSheet
@@ -52,35 +51,7 @@ import web.html.HTMLTableSectionElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
 
-/**
- * The browser's own class names: the table, its cells, the selectable row and the member panel are
- * selected only in this file. `CODE_CLASS`, `HINT_CLASS` and `DETAIL_HINT_CLASS` are shared with the
- * resources section and the section shell, so they stay in `theme/Classes.kt`.
- */
-private val TABLE_CLASS: ClassName = ClassName("class-table")
-
-private val CELL_CLASS: ClassName = ClassName("cell")
-
-private val HEAD_CELL_CLASS: ClassName = ClassName("cell-head")
-
-/** A selectable table row; [SELECTED_CLASS] is toggled by this element as rows are picked. */
-private val ROW_CLASS: ClassName = ClassName("row")
-
 private val SELECTED_CLASS: ClassName = ClassName("is-selected")
-
-private val DETAIL_CLASS: ClassName = ClassName("detail")
-
-private val DETAIL_HEADING_CLASS: ClassName = ClassName("detail-heading")
-
-private val MEMBER_CLASS: ClassName = ClassName("member")
-
-private val MEMBER_LIST_CLASS: ClassName = ClassName("member-list")
-
-private val BADGE_CLASS: ClassName = ClassName("badge")
-
-private val BADGE_OK_CLASS: ClassName = ClassName("badge-ok")
-
-private val BADGE_MUTED_CLASS: ClassName = ClassName("badge-muted")
 
 /**
  * `<kmp-classes>`: the class table and the member panel under it.
@@ -253,8 +224,7 @@ internal class ClassBrowser : CustomElementAdapter(), PageBlock {
             textContent = value
         }
 
-    companion object : CustomElementReference<ClassBrowser>(ClassBrowser::class.js) {
-        val NAME: TagName<ClassBrowser> = TagName("kmp-classes")
+    companion object : CustomElementReferenceAdapter<ClassBrowser>(ClassBrowser::class.js, "kmp-classes") {
 
         /**
          * The browser's own rules: one rule per node kind, so the table costs four rules whether it
@@ -345,11 +315,23 @@ internal class ClassBrowser : CustomElementAdapter(), PageBlock {
                 color = mutedText
             }
         }
+        /**
+         * The browser's own class names: the table, its cells, the selectable row and the member panel are
+         * selected only in this file. `CODE_CLASS`, `HINT_CLASS` and `DETAIL_HINT_CLASS` are shared with the
+         * resources section and the section shell, so they stay in `theme/Classes.kt`.
+         */
+        private val TABLE_CLASS: ClassName = ClassName("class-table")
+        private val CELL_CLASS: ClassName = ClassName("cell")
+        private val HEAD_CELL_CLASS: ClassName = ClassName("cell-head")
+        /** A selectable table row; [SELECTED_CLASS] is toggled by this element as rows are picked. */
+        private val ROW_CLASS: ClassName = ClassName("row")
+        private val DETAIL_CLASS: ClassName = ClassName("detail")
+        private val DETAIL_HEADING_CLASS: ClassName = ClassName("detail-heading")
+        private val MEMBER_CLASS: ClassName = ClassName("member")
+        private val MEMBER_LIST_CLASS: ClassName = ClassName("member-list")
+        private val BADGE_CLASS: ClassName = ClassName("badge")
+        private val BADGE_OK_CLASS: ClassName = ClassName("badge-ok")
+        private val BADGE_MUTED_CLASS: ClassName = ClassName("badge-muted")
     }
 }
 
-/** Defines `<kmp-classes>` once and returns its tag. */
-internal fun classBrowserTag(): TagName<ClassBrowser> {
-    defineIfMissing(ClassBrowser.NAME, ClassBrowser.Companion)
-    return ClassBrowser.NAME
-}

@@ -3,7 +3,6 @@ package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
@@ -38,8 +37,3 @@ internal class NestedSection : CustomElementAdapter(), PageBlock {
     companion object : CustomElementReferenceAdapter<NestedSection>(NestedSection::class.js, "kmp-nested")
 }
 
-/** Defines `<kmp-nested>` once and returns its tag. */
-internal fun nestedSectionTag(): TagName<NestedSection> {
-    defineIfMissing(NestedSection.NAME, NestedSection.Companion)
-    return NestedSection.NAME
-}

@@ -3,7 +3,6 @@ package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
@@ -56,8 +55,3 @@ internal class ProxySection : CustomElementAdapter(), PageBlock {
     companion object : CustomElementReferenceAdapter<ProxySection>(ProxySection::class.js, "kmp-proxy")
 }
 
-/** Defines `<kmp-proxy>` once and returns its tag. */
-internal fun proxySectionTag(): TagName<ProxySection> {
-    defineIfMissing(ProxySection.NAME, ProxySection.Companion)
-    return ProxySection.NAME
-}

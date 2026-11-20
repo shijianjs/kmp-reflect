@@ -5,14 +5,14 @@ import io.github.shijianjs.ktjs.demo.layout.DemoLayout
 import io.github.shijianjs.ktjs.demo.layout.LayoutConfig
 import io.github.shijianjs.ktjs.demo.style.Theme
 import io.github.shijianjs.kmp.reflect.KmpReflection
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.annotationSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.enumSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.invocationSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.limitationsSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.nestedSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.proxySectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.resourcesSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.AnnotationSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ClassBrowser
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.EnumSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.InvocationSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.LimitationsSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.NestedSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ProxySection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ResourcesSection
 import web.dom.ElementId
 import web.dom.document
 import io.github.shijianjs.ktjs.dom.element.invoke
@@ -25,26 +25,29 @@ private const val API_URL: String = "https://shijianjs.github.io/kmp-reflect/api
 private const val SOURCE_URL: String = "https://github.com/shijianjs/kmp-reflect"
 
 /**
- * Entry point: register the generated metadata, define the section tags, then mount the shell.
+ * Entry point: register the generated metadata, let each section's companion register its tag, then
+ * mount the shell.
  *
- * The order matters. Metadata comes first of all: every section reads it while constructing. The
- * section tags are defined before the layout mounts, because the layout builds the first page eagerly
- * and a page's constructor creates its section — an undefined tag there would be an unknown element
- * that upgrades later, in an order nobody controls.
+ * The order matters. Metadata comes first of all: every section reads it while constructing. Each
+ * tag is registered before the layout mounts, because the layout builds the first page eagerly and
+ * a page's constructor creates its section — an undefined tag there would be an unknown element that
+ * upgrades later, in an order nobody controls.
  */
+@Suppress("UNUSED_EXPRESSION")
 public fun main() {
     KmpReflection.register(DemoReflection)
 
-    classBrowserTag()
-    invocationSectionTag()
-    proxySectionTag()
-    resourcesSectionTag()
-    annotationSectionTag()
-    enumSectionTag()
-    nestedSectionTag()
-    limitationsSectionTag()
+    // Reading `NAME` is what registers the tag: the companion's `init` defines it on first read, and
+    // the browser upgrades the element the page already spells.
+    ClassBrowser.NAME
+    InvocationSection.NAME
+    ProxySection.NAME
+    ResourcesSection.NAME
+    AnnotationSection.NAME
+    EnumSection.NAME
+    NestedSection.NAME
+    LimitationsSection.NAME
 
-    // The companion registers the tag in its `init`; reading `NAME` upgrades the element the page already spells.
     DemoLayout.NAME
 
     val language = LanguageState(storageKey = "kmp-reflect-language").also { it.init() }

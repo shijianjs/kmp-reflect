@@ -3,7 +3,6 @@ package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClass
@@ -66,8 +65,3 @@ internal class InvocationSection : CustomElementAdapter(), PageBlock {
     companion object : CustomElementReferenceAdapter<InvocationSection>(InvocationSection::class.js, "kmp-invocation")
 }
 
-/** Defines `<kmp-invocation>` once and returns its tag. */
-internal fun invocationSectionTag(): TagName<InvocationSection> {
-    defineIfMissing(InvocationSection.NAME, InvocationSection.Companion)
-    return InvocationSection.NAME
-}

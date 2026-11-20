@@ -1,10 +1,10 @@
 package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.css.cssSheet
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
@@ -20,7 +20,6 @@ import io.github.shijianjs.kmp.reflect.resource.KmpResource
 import io.github.shijianjs.kmp.reflect.resource.KmpResources
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import web.components.CustomElementReference
 import web.cssom.Border
 import web.cssom.CSSStyleSheet
 import web.cssom.ClassName
@@ -34,13 +33,6 @@ import web.dom.TagName
 import web.html.HTMLImageElement
 import web.html.HTMLElement
 import web.html.HtmlTagName
-
-/** The resource list's own class names; `CODE_CLASS` / `OUTPUT_ITEM_CLASS` are shared, so they stay in `theme/Classes.kt`. */
-private val RESOURCE_CLASS: ClassName = ClassName("resource")
-
-private val PREVIEW_CLASS: ClassName = ClassName("preview")
-
-private val THUMB_CLASS: ClassName = ClassName("thumb")
 
 /**
  * `<kmp-resources>`: the resources the processor read from `demo/data` at compile time.
@@ -105,8 +97,7 @@ internal class ResourcesSection : CustomElementAdapter(), PageBlock {
             src = "data:${resource.mimeType};base64,${Base64.encode(resource.bytes)}"
         }
 
-    companion object : CustomElementReference<ResourcesSection>(ResourcesSection::class.js) {
-        val NAME: TagName<ResourcesSection> = TagName("kmp-resources")
+    companion object : CustomElementReferenceAdapter<ResourcesSection>(ResourcesSection::class.js, "kmp-resources") {
 
         /** The resources section's own rules: the preview is muted code, the thumb is a framed image. */
         private val RESOURCES_SHEET: CSSStyleSheet = cssSheet {
@@ -130,11 +121,10 @@ internal class ResourcesSection : CustomElementAdapter(), PageBlock {
                 cursor = Cursor.default
             }
         }
+        /** The resource list's own class names; `CODE_CLASS` / `OUTPUT_ITEM_CLASS` are shared, so they stay in `theme/Classes.kt`. */
+        private val RESOURCE_CLASS: ClassName = ClassName("resource")
+        private val PREVIEW_CLASS: ClassName = ClassName("preview")
+        private val THUMB_CLASS: ClassName = ClassName("thumb")
     }
 }
 
-/** Defines `<kmp-resources>` once and returns its tag. */
-internal fun resourcesSectionTag(): TagName<ResourcesSection> {
-    defineIfMissing(ResourcesSection.NAME, ResourcesSection.Companion)
-    return ResourcesSection.NAME
-}

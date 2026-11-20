@@ -13,14 +13,14 @@ import io.github.shijianjs.kmp.reflect.demo.page.LimitsPage
 import io.github.shijianjs.kmp.reflect.demo.page.NestedPage
 import io.github.shijianjs.kmp.reflect.demo.page.ProxyPage
 import io.github.shijianjs.kmp.reflect.demo.page.ResourcesPage
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.annotationSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.enumSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.invocationSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.limitationsSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.nestedSectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.proxySectionTag
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.resourcesSectionTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.AnnotationSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ClassBrowser
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.EnumSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.InvocationSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.LimitationsSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.NestedSection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ProxySection
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ResourcesSection
 
 /**
  * The demo's pages: two groups, eight routes, one per capability.

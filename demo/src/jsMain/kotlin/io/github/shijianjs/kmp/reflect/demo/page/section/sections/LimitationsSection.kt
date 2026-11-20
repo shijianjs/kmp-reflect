@@ -3,7 +3,6 @@ package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
@@ -32,8 +31,3 @@ internal class LimitationsSection : CustomElementAdapter(), PageBlock {
     companion object : CustomElementReferenceAdapter<LimitationsSection>(LimitationsSection::class.js, "kmp-limitations")
 }
 
-/** Defines `<kmp-limitations>` once and returns its tag. */
-internal fun limitationsSectionTag(): TagName<LimitationsSection> {
-    defineIfMissing(LimitationsSection.NAME, LimitationsSection.Companion)
-    return LimitationsSection.NAME
-}

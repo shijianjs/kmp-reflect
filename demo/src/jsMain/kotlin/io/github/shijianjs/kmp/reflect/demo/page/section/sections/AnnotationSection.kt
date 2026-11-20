@@ -3,7 +3,6 @@ package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
@@ -49,8 +48,3 @@ internal class AnnotationSection : CustomElementAdapter(), PageBlock {
     companion object : CustomElementReferenceAdapter<AnnotationSection>(AnnotationSection::class.js, "kmp-annotations")
 }
 
-/** Defines `<kmp-annotations>` once and returns its tag. */
-internal fun annotationSectionTag(): TagName<AnnotationSection> {
-    defineIfMissing(AnnotationSection.NAME, AnnotationSection.Companion)
-    return AnnotationSection.NAME
-}

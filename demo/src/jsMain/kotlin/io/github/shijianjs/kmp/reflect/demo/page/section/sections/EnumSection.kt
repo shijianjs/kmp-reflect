@@ -3,7 +3,6 @@ package io.github.shijianjs.kmp.reflect.demo.page.section.sections
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
-import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
@@ -42,8 +41,3 @@ internal class EnumSection : CustomElementAdapter(), PageBlock {
     companion object : CustomElementReferenceAdapter<EnumSection>(EnumSection::class.js, "kmp-enums")
 }
 
-/** Defines `<kmp-enums>` once and returns its tag. */
-internal fun enumSectionTag(): TagName<EnumSection> {
-    defineIfMissing(EnumSection.NAME, EnumSection.Companion)
-    return EnumSection.NAME
-}

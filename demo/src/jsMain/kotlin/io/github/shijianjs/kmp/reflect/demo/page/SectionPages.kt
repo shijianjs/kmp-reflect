@@ -3,7 +3,7 @@ package io.github.shijianjs.kmp.reflect.demo.page
 import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
-import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
+import io.github.shijianjs.kmp.reflect.demo.page.section.sections.ClassBrowser
 
 /*
  * The eight routes of this site. They share one shape — a [SectionPage] frame around one section
@@ -14,7 +14,7 @@ import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTa
 /** Class browser: search a class, then walk its members. */
 internal class ClassesPage : SectionPage() {
     init {
-        show(classBrowserTag().createElement(), { it.classesHeading }, { it.classesHint })
+        show(ClassBrowser.NAME.createElement(), { it.classesHeading }, { it.classesHint })
     }
 
     companion object : CustomElementReferenceAdapter<ClassesPage>(ClassesPage::class.js, "reflect-classes-page")
