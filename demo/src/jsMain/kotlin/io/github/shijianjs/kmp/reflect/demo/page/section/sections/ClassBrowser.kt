@@ -8,7 +8,6 @@ import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
 import io.github.shijianjs.ktjs.dom.element.invoke
-import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
@@ -32,7 +31,6 @@ import web.cssom.CSSStyleSheet
 import web.cssom.ClassName
 import web.cssom.Cursor
 import web.cssom.FontFamily
-import web.cssom.FontWeight
 import web.cssom.LineStyle
 import web.cssom.Margin
 import web.cssom.Overflow
@@ -83,14 +81,6 @@ private val BADGE_CLASS: ClassName = ClassName("badge")
 private val BADGE_OK_CLASS: ClassName = ClassName("badge-ok")
 
 private val BADGE_MUTED_CLASS: ClassName = ClassName("badge-muted")
-
-/** One reflected class in the table, with the two cells whose text is language-dependent. */
-private class ClassRow(
-    val kmpClass: KmpClass,
-    val rowElement: HTMLTableRowElement,
-    val membersCell: HTMLTableCellElement,
-    val annotationsCell: HTMLTableCellElement,
-)
 
 /**
  * `<kmp-classes>`: the class table and the member panel under it.
