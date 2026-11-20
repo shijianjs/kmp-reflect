@@ -4,6 +4,8 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
@@ -11,7 +13,6 @@ import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.style.RESET
-import web.components.CustomElementReference
 import web.dom.TagName
 
 /** `<kmp-nested>`: nested classes that were themselves reflected, listed under their outer class. */
@@ -34,9 +35,7 @@ internal class NestedSection : CustomElementAdapter(), PageBlock {
         list.setLines(lines.ifEmpty { listOf(translation.detailEmpty) })
     }
 
-    companion object : CustomElementReference<NestedSection>(NestedSection::class.js) {
-        val NAME: TagName<NestedSection> = TagName("kmp-nested")
-    }
+    companion object : CustomElementReferenceAdapter<NestedSection>(NestedSection::class.js, "kmp-nested")
 }
 
 /** Defines `<kmp-nested>` once and returns its tag. */

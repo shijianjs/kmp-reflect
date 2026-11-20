@@ -4,14 +4,15 @@ import io.github.shijianjs.ktjs.demo.nav.DemoMenu
 import io.github.shijianjs.ktjs.demo.nav.Entry
 import io.github.shijianjs.ktjs.demo.nav.Group
 import io.github.shijianjs.ktjs.dom.element.createElement
-import io.github.shijianjs.kmp.reflect.demo.page.newAnnotationsPage
-import io.github.shijianjs.kmp.reflect.demo.page.newClassesPage
-import io.github.shijianjs.kmp.reflect.demo.page.newEnumsPage
-import io.github.shijianjs.kmp.reflect.demo.page.newInvocationPage
-import io.github.shijianjs.kmp.reflect.demo.page.newLimitsPage
-import io.github.shijianjs.kmp.reflect.demo.page.newNestedPage
-import io.github.shijianjs.kmp.reflect.demo.page.newProxyPage
-import io.github.shijianjs.kmp.reflect.demo.page.newResourcesPage
+import io.github.shijianjs.ktjs.dom.element.invoke
+import io.github.shijianjs.kmp.reflect.demo.page.AnnotationsPage
+import io.github.shijianjs.kmp.reflect.demo.page.ClassesPage
+import io.github.shijianjs.kmp.reflect.demo.page.EnumsPage
+import io.github.shijianjs.kmp.reflect.demo.page.InvocationPage
+import io.github.shijianjs.kmp.reflect.demo.page.LimitsPage
+import io.github.shijianjs.kmp.reflect.demo.page.NestedPage
+import io.github.shijianjs.kmp.reflect.demo.page.ProxyPage
+import io.github.shijianjs.kmp.reflect.demo.page.ResourcesPage
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.annotationSectionTag
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.classBrowserTag
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.enumSectionTag
@@ -36,28 +37,28 @@ private val COMPILER: Group = Group("compiler", "lucide:file-code")
 internal fun siteMenu(): DemoMenu = DemoMenu(
     listOf(
         Entry("classes", REFLECTION, "lucide:table") {
-            newClassesPage()
+            ClassesPage.NAME()
         },
         Entry("invocation", REFLECTION, "lucide:play") {
-            newInvocationPage()
+            InvocationPage.NAME()
         },
         Entry("proxy", REFLECTION, "lucide:waypoints") {
-            newProxyPage()
+            ProxyPage.NAME()
         },
         Entry("resources", COMPILER, "lucide:package") {
-            newResourcesPage()
+            ResourcesPage.NAME()
         },
         Entry("annotations", COMPILER, "lucide:tag") {
-            newAnnotationsPage()
+            AnnotationsPage.NAME()
         },
         Entry("enums", COMPILER, "lucide:list") {
-            newEnumsPage()
+            EnumsPage.NAME()
         },
         Entry("nested", COMPILER, "lucide:folder-tree") {
-            newNestedPage()
+            NestedPage.NAME()
         },
         Entry("limits", COMPILER, "lucide:triangle-alert") {
-            newLimitsPage()
+            LimitsPage.NAME()
         },
     ),
 )

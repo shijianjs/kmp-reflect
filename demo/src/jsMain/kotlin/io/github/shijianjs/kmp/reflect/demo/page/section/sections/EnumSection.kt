@@ -4,6 +4,8 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Shape
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
@@ -12,7 +14,6 @@ import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.style.RESET
-import web.components.CustomElementReference
 import web.dom.TagName
 
 /** `<kmp-enums>`: each enum entry, its ordinal and the real instance behind it. */
@@ -38,9 +39,7 @@ internal class EnumSection : CustomElementAdapter(), PageBlock {
         list.setLines(lines.ifEmpty { listOf(translation.detailEmpty) })
     }
 
-    companion object : CustomElementReference<EnumSection>(EnumSection::class.js) {
-        val NAME: TagName<EnumSection> = TagName("kmp-enums")
-    }
+    companion object : CustomElementReferenceAdapter<EnumSection>(EnumSection::class.js, "kmp-enums")
 }
 
 /** Defines `<kmp-enums>` once and returns its tag. */

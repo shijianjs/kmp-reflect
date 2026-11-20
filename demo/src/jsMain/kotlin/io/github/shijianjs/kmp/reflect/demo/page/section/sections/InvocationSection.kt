@@ -4,6 +4,8 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClass
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Person
@@ -13,7 +15,6 @@ import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.style.RESET
-import web.components.CustomElementReference
 import web.dom.TagName
 
 /**
@@ -62,9 +63,7 @@ internal class InvocationSection : CustomElementAdapter(), PageBlock {
         )
     }
 
-    companion object : CustomElementReference<InvocationSection>(InvocationSection::class.js) {
-        val NAME: TagName<InvocationSection> = TagName("kmp-invocation")
-    }
+    companion object : CustomElementReferenceAdapter<InvocationSection>(InvocationSection::class.js, "kmp-invocation")
 }
 
 /** Defines `<kmp-invocation>` once and returns its tag. */

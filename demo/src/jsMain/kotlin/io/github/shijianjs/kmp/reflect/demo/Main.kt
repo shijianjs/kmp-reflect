@@ -15,6 +15,7 @@ import io.github.shijianjs.kmp.reflect.demo.page.section.sections.proxySectionTa
 import io.github.shijianjs.kmp.reflect.demo.page.section.sections.resourcesSectionTag
 import web.dom.ElementId
 import web.dom.document
+import io.github.shijianjs.ktjs.dom.element.invoke
 
 /** Where this demo is published, next to its documentation and its API reference. */
 private const val DOCS_URL: String = "https://shijianjs.github.io/kmp-reflect/"
@@ -43,7 +44,8 @@ public fun main() {
     nestedSectionTag()
     limitationsSectionTag()
 
-    DemoLayout.define()
+    // The companion registers the tag in its `init`; reading `NAME` upgrades the element the page already spells.
+    DemoLayout.NAME
 
     val language = LanguageState(storageKey = "kmp-reflect-language").also { it.init() }
     val theme = Theme(storageKey = "kmp-reflect-theme").also { it.applyStored() }

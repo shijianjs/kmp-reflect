@@ -4,6 +4,8 @@ import io.github.shijianjs.ktjs.dom.element.createElement
 import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementAdapter
 import io.github.shijianjs.ktjs.dom.webcomponent.attachStyledShadow
 import io.github.shijianjs.ktjs.dom.webcomponent.defineIfMissing
+import io.github.shijianjs.ktjs.dom.webcomponent.CustomElementReferenceAdapter
+import io.github.shijianjs.ktjs.dom.element.invoke
 import io.github.shijianjs.kmp.reflect.KmpClasses
 import io.github.shijianjs.kmp.reflect.demo.model.Greeter
 import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
@@ -13,7 +15,6 @@ import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
 import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.style.RESET
 import io.github.shijianjs.kmp.reflect.proxy.KmpInvocationHandler
-import web.components.CustomElementReference
 import web.dom.TagName
 
 /**
@@ -52,9 +53,7 @@ internal class ProxySection : CustomElementAdapter(), PageBlock {
         list.setLines(listOf(proxyAnswer?.let { answer -> "${translation.proxyResult}: $answer" } ?: translation.detailEmpty))
     }
 
-    companion object : CustomElementReference<ProxySection>(ProxySection::class.js) {
-        val NAME: TagName<ProxySection> = TagName("kmp-proxy")
-    }
+    companion object : CustomElementReferenceAdapter<ProxySection>(ProxySection::class.js, "kmp-proxy")
 }
 
 /** Defines `<kmp-proxy>` once and returns its tag. */
