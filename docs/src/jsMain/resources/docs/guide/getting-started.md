@@ -111,6 +111,9 @@ KmpReflection.register(DemoReflection)
 val personClass = KmpClasses.of<Person>()
 ```
 
+Registering only records the module's class names; the metadata of each class is built the first time
+something looks it up, so start-up cost does not grow with the number of reflected classes.
+
 ## Using it
 
 ```kotlin

@@ -106,6 +106,8 @@ KmpReflection.register(DemoReflection)
 val personClass = KmpClasses.of<Person>()
 ```
 
+注册只记下模块的类名，每个类的元数据在第一次被查到时才生成，所以启动成本不随被反射类的数量增长。
+
 ## 使用
 
 ```kotlin

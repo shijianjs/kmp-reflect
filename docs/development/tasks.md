@@ -22,9 +22,9 @@
 | 状态 | 数量 |
 |---|---:|
 | 总计 | 9 |
-| 已完成 | 6 |
+| 已完成 | 8 |
 | 明确不做 | 1 |
-| 待完成 | 2 |
+| 待完成 | 0 |
 
 核对日期：2026-11-22。
 
@@ -385,9 +385,16 @@ background `rgb(37, 99, 235)` / color `rgb(255, 255, 255)` / padding `9px 18px` 
   （声明自身不算，接口/父类按全名或简单名匹配，沿反射链走）与 `allFunctions()`（本类 + 反射父类型的函数，
   按名字与参数类型去重，override 不重复、同名不同参算两个）。
   KSP 生成物的具名参数、demo 断言、双语文档表与 mermaid、`technical-decisions.md` 同步改名。
-- 98 文档与文案对齐（待完成）。
-- 99 边界覆盖用例：`Scoped` / `Box` / `OuterWork`(+`Inner`) / `Meters` / `Speaker` / `Formatter` /
-  `Specimen`（待完成）。
+- 98 **文档与文案对齐**：`KmpVariance` 的 IN/OUT KDoc 互换回来、`KmpAnnotation.arguments` 改为「含注解声明的
+  默认值」、`KmpConstructor` 的 inner 报错改为「inner 类需要外部实例，或签名含类型参数」、`KmpClass.isInstance`
+  写明与 `KmpTypeRef.isInstance` 的宽严差异（以上随 92/93 落地）；`getting-started` / `metadata` /
+  `limitations` 的 en+zh 六页对齐到「private/protected 永不反射、成员带 visibility、尾部默认可省、注册惰性、
+  注册表按需生成、`reflectedSupertypes`」；`technical-decisions.md` 补注册表惰性、vararg 桥、`kotlin.jvm.*`
+  注解不记 runtime 三条。
+- 99 **边界覆盖用例**：`Scoped`（protected/private、internal、vararg 函数与 vararg 构造器）、`Box`
+  （typealias + 泛型类 + 闭合成员）、`OuterWork` + `Inner`、`Meters`（value class）、`Speaker`（接口默认实现）、
+  `Formatter`（中间默认）、`Specimen`（注解四类参数）在 JVM / JS(browser) / Wasm(Node) / Native(mingwX64)
+  四个后端全部跑通。
 - 100 数据类合成成员的过滤选项（明确不做，理由见「明确不做」）。
 
 验证（92/93）：`:demo:reflectionTest` 23 项全绿（新增 protected/private 缺席、internal 可见性、
@@ -405,6 +412,13 @@ vararg、泛型类只描述、`value class`、`inner`、接口默认实现、注
 `load` 是 17 个分支的 `when`，注册时不再构造任何 `KmpClass`。core 新用例用计数 `load` 证明
 「注册 0 次、单查 1 次、二次命中不再加载、`all()` 才补齐」；demo 断言 `Calculator` 的
 `isSubclassOf("Machine")` 为真、自身为假，`allFunctions()` 合并出 4 个自有 + 1 个继承、共 5 个。
+
+验证（98/99）：`:demo:allTests` 在四个后端全绿，每个目标 26 项：`reflectionTest`（JVM）、
+`jsBrowserTest`、`wasmJsNodeTest`、`mingwX64Test`，0 failure。过程中发现并修掉两个只在真跑全平台时才暴露的
+问题：`@JvmInline` 在 commonMain 需要显式 `import kotlin.jvm.JvmInline`（非 JVM 目标没有默认导入）；
+Kotlin/Wasm 对「lambda 里 spread 一个 cast 出来的数组」会内部报错，改成文件私有桥函数后四个后端同源编译。
+生成物实测：`Scoped` 的 `join` invoker 变成 `kmpCall_…_function2(receiver as Scoped, args[0] as Array<String>)`，
+桥函数里 `target.join(*arg1)`；vararg 构造器同样走桥。
 
 ## 明确不做
 

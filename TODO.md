@@ -45,17 +45,22 @@
 [docs/development/tasks.md](docs/development/tasks.md) 的 S 节。
 
 - 总计：9
-- 已完成：6
+- 已完成：8
 - 明确不做：1
-- 待完成：2
+- 待完成：0
 
 ### 当前待办
 
-- [ ] 98 文档与文案对齐（README / ksp README 等剩余位置）
-- [ ] 99 边界覆盖用例在四个后端跑通（用例已落地，待 `:demo:allTests` 验证）
+无。S 批的 92–99 全部落地，100 明确不做；四个后端 `:demo:allTests` 各 26 项全绿。
 
 ### 注意事项
 
 - `private` / `protected` 成员与构造器不进元数据：生成文件在类外，调用它们无法编译。
+- 注册表是惰性的：`KmpReflection.register` 只记名字，模块的 `classes` 由 `classNames + load` 派生；
+  不要把 `classes` 改回 `listOf(…)`，那会让生成的 `by lazy` 全部提前求值。
+- `vararg` 成员的调用必须走文件私有桥函数：Kotlin/Wasm 在 lowering 阶段处理「函数值里 spread 一个 cast
+  结果」时会内部报错，`*(args[0] as Array<T>)` 只能出现在普通函数体里。
+- `kotlin.jvm.*` 注解（`@JvmInline` 等）不要写 `runtime = X::class`：非 JVM 目标上是 optional expectation，
+  Native 链接会把整个初始化器报成 `IrConstantObjectImpl`；commonMain 里用 `@JvmInline` 记得显式 import。
 - 泛型类的接收者一律写 `Box<*>`（`ClassModel.ownerType()`），不要再退化成裸 `Box`。
 - 数据类合成成员保留现状（`copy` / `componentN` 照常反射），过滤选项明确不做，理由见 tasks.md。

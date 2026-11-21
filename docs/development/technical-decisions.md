@@ -34,6 +34,11 @@
   跨模块的父类型只留在 `supertypes` 里（别处生成的值是 `internal`，链不上）。
 - 注册表存的是名字 + 取数闭包，模块的 `classes` 只是 `classNames.mapNotNull { load(it) }`：注册不解引用，
   第一次查询才生成那一个类的元数据；`all()` / `find` / `implementing` 这类扫描才会全量生成。
+- `vararg` 成员的调用多走一层文件私有桥函数：把数组实参先按声明类型 `as` 成参数，桥里再用 `*arg` 展开。
+  Kotlin/Wasm 后端在「函数值里对 cast 结果做 spread」时会自己崩掉（`Argument CLASS Any must be an array`），
+  整套测试可执行文件直接链接失败；把 spread 放进普通函数体就正常，生成物因此在四个后端同源可编译。
+- `kotlin.jvm.*` 的注解（`@JvmInline` 等）不写 `runtime = X::class`：它们在 JS/Wasm/Native 上是
+  optional expectation，不是真实类，Native 链接时会把整个初始化器报成 `IrConstantObjectImpl`。
 - 不做运行时类加载、不读资源文件、不做失败重试：生成的是普通 Kotlin 源码，跨平台一致，
   消费方编译不过就是编译不过，不会留到运行时才炸。
 - 类型信息用自建的 `KmpTypeRef` 表达（`qualifiedName` / `arguments` / `nullable` / `runtime: KClass<*>?`），
