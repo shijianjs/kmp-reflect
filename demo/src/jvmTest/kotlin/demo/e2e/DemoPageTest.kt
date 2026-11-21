@@ -23,7 +23,7 @@ class DemoPageTest {
 
         assertTrue(page.title().contains("kmp-reflect"), "title: ${page.title()}")
         assertTrue(page.locator("#demo img.layout__logo").isVisible(), "the shell serves the project logo")
-        assertEquals("Reflected classes", page.locator("#demo ktjs-demo-page h1").first().textContent())
+        assertEquals("Reflected classes", page.locator("#demo reflect-classes-page h1").first().textContent())
         assertEquals(8, page.locator("#demo vaadin-side-nav-item[data-route]").count())
     }
 
@@ -75,7 +75,7 @@ class DemoPageTest {
 
         switchLanguage(page, "zh-Hans")
 
-        assertEquals("已反射的类", page.locator("#demo ktjs-demo-page h1").first().textContent())
+        assertEquals("已反射的类", page.locator("#demo reflect-classes-page h1").first().textContent())
         // The class browser is data, not copy: the table is still there after the switch.
         assertTrue(page.locator("tr.row").count() > 0)
     }
@@ -105,7 +105,7 @@ class DemoPageTest {
     /** Opens a route through its sidebar item, which is also a check of the router. */
     private fun navigate(page: Page, route: String) {
         page.locator("#demo vaadin-side-nav-item[data-route='$route']").first().click()
-        page.waitForSelector("#demo ktjs-demo-page h1")
+        page.waitForSelector("#demo reflect-$route-page h1")
     }
 
     /** Opens the layout's language menu and picks [code]. */
