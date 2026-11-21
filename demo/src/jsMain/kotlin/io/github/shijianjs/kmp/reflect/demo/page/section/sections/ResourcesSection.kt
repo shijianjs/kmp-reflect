@@ -10,7 +10,6 @@ import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
-import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.style.CODE_CLASS
 import io.github.shijianjs.kmp.reflect.demo.style.OUTPUT_ITEM_CLASS
 import io.github.shijianjs.kmp.reflect.demo.style.RESET
@@ -49,7 +48,7 @@ internal class ResourcesSection : CustomElementAdapter(), PageBlock {
     private val entries: List<Entry>
 
     init {
-        val shadow = attachStyledShadow(RESET, OUTPUT_SHEET, RESOURCES_SHEET)
+        val shadow = attachStyledShadow(RESET, OutputList.SHEET, RESOURCES_SHEET)
         shadow.appendChild(list.element)
 
         entries = KmpResources.all().sortedBy { resource -> resource.path }.map(::entryOf)

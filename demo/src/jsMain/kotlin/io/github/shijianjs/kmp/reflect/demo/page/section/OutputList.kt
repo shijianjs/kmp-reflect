@@ -36,24 +36,29 @@ internal class OutputList {
         }
         element.replaceChildren(*items.toTypedArray())
     }
-}
 
-/**
- * The rules of any output list, adopted by every section whose body is one.
- *
- * The list is the same shape everywhere, and it must look the same everywhere — that is the promise
- * this shared sheet makes. A section with more than a list (the class browser, the resources) adds its
- * own rules on top instead of copying these.
- */
-internal val OUTPUT_SHEET: CSSStyleSheet = cssSheet {
-    OUTPUT_CLASS {
-        margin = Margin(0.px, 0.px)
-        padding = Padding(0.px, 0.px, 0.px, 18.px)
-        fontSize = 13.px
-        lineHeight = number(1.6)
-    }
+    companion object {
+        /**
+         * The rules of any output list, adopted by every section whose body is one.
+         *
+         * The list is the same shape everywhere, and it must look the same everywhere — that is the
+         * promise this shared sheet makes. A section with more than a list (the class browser, the
+         * resources) adds its own rules on top instead of copying these.
+         *
+         * It lives here rather than at file level: the rules belong to the shape they describe, and
+         * every section reads them through `OutputList` instead of importing a free-standing value.
+         */
+        val SHEET: CSSStyleSheet = cssSheet {
+            OUTPUT_CLASS {
+                margin = Margin(0.px, 0.px)
+                padding = Padding(0.px, 0.px, 0.px, 18.px)
+                fontSize = 13.px
+                lineHeight = number(1.6)
+            }
 
-    OUTPUT_ITEM_CLASS {
-        marginBottom = 3.px
+            OUTPUT_ITEM_CLASS {
+                marginBottom = 3.px
+            }
+        }
     }
 }

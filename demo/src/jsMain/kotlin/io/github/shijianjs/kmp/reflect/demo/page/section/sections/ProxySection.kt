@@ -11,7 +11,6 @@ import io.github.shijianjs.kmp.reflect.demo.page.PageBlock
 import io.github.shijianjs.kmp.reflect.demo.page.lang.Translation
 import io.github.shijianjs.kmp.reflect.demo.page.lang.english
 import io.github.shijianjs.kmp.reflect.demo.page.section.OutputList
-import io.github.shijianjs.kmp.reflect.demo.page.section.OUTPUT_SHEET
 import io.github.shijianjs.kmp.reflect.demo.style.RESET
 import io.github.shijianjs.kmp.reflect.proxy.KmpInvocationHandler
 import web.dom.TagName
@@ -30,7 +29,7 @@ internal class ProxySection : CustomElementAdapter(), PageBlock {
     private val proxyAnswer: String?
 
     init {
-        val shadow = attachStyledShadow(RESET, OUTPUT_SHEET)
+        val shadow = attachStyledShadow(RESET, OutputList.SHEET)
         shadow.appendChild(list.element)
 
         val greeterClass = KmpClasses.byNameOrNull("io.github.shijianjs.kmp.reflect.demo.model.Greeter")
