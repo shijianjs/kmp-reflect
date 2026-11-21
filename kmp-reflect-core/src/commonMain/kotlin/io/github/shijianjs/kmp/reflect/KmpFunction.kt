@@ -75,6 +75,15 @@ public class KmpFunction(
         get() = returnType.qualifiedName
 
     /**
+     * Name plus parameter types, e.g. `greet(kotlin.String, kotlin.Int)`.
+     *
+     * Used to tell an override from an overload when [KmpClass.allFunctions] merges a hierarchy:
+     * the same signature declared twice is one function, a different one is a second overload.
+     */
+    internal val signature: String
+        get() = "$name(${parameters.joinToString(", ") { it.type.qualifiedName }})"
+
+    /**
      * Calls the function on [receiver] with [arguments].
      *
      * @throws KmpReflectException when the function is not invokable, when the argument count does

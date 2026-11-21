@@ -17,7 +17,7 @@ description: KmpClass 暴露了什么，以及“可调用”的含义。
 | `annotations` | 写在声明上的 `List<KmpAnnotation>` |
 | `typeParameters` | `KmpTypeParameter`，含上界与可空性 |
 | `supertypes` | 直接声明的父类型，不含传递闭包 |
-| `superclasses` | 直接声明且在同一模块内参与反射的父类型，带元数据链接；`allSuperclasses` 沿链上溯 |
+| `reflectedSupertypes` | 直接声明且在同一模块内参与反射的父类型（接口也算），带元数据链接；`allReflectedSupertypes` 沿链上溯 |
 | `constructors`、`functions`、`properties` | 已声明的成员，`@KmpReflectIgnore` 的已移除 |
 | `enumEntries` | `KmpEnumEntry`，含名称、序号、注解与实例本身 |
 | `companion`、`nestedClasses` | 只有同样参与反射的才会出现 |
@@ -27,15 +27,16 @@ description: KmpClass 暴露了什么，以及“可调用”的含义。
 它的便捷方法都是按名字查找而不是扫描：`function(name, arity)`、`functionsNamed(name)`、
 `property(name)`、`constructor(arity)`、`enumEntry(name)`、`annotation(qualifiedName)`、
 `annotationOf<A>()`，以及 `isInterface`、`isObject`、`isEnum`、`isAbstract`、`isData`、`isProxyable`
-和 `isInstance(value)`。
+和 `isInstance(value)`。两个层级问题不需要扫描就能回答：`isSubclassOf(name)`（声明自身不算）与
+`allFunctions()`（本类声明 + 反射到的父类型，按名字与参数类型去重）。
 
 ```mermaid
 flowchart LR
     C["KmpClass"] --> N["身份：qualifiedName / simpleName<br/>packageName / kind"]
     C --> M["声明面：visibility / modifiers<br/>annotations / typeParameters"]
-    C --> H["层级：supertypes / superclasses<br/>nestedClasses / companion"]
+    C --> H["层级：supertypes / reflectedSupertypes<br/>allReflectedSupertypes / isSubclassOf<br/>nestedClasses / companion"]
     C --> MB["成员：constructors / functions<br/>properties / enumEntries"]
-    C --> L["查找：function(name, arity) / property(name)<br/>annotation(name) / enumEntry(name)"]
+    C --> L["查找：function(name, arity) / property(name)<br/>annotation(name) / enumEntry(name)<br/>allFunctions()"]
     MB --> INV["KmpFunction.invoke / KmpProperty.get<br/>只在生成了 lambda 的地方可调用"]
 ```
 
@@ -128,3 +129,24 @@ record.annotation("nested")    // KmpAnnotation?
 
 只有注册过模块对象的类。这是刻意的：不遍历 classpath、不会意外持有实例，Kotlin/JS 上本来也无处可遍历。
 测试里记得注册，并且知道有 `KmpClasses.clear()` 可用。
+
+## 元数据什么时候生成
+
+注册是惰性的：模块只把 `classNames` 交给注册表，每个名字对应的元数据
+（生成的 `internal val kmpClass_… by lazy { … }`）在第一次被查到时才生成。所以一次查询的成本是一个类，
+不是一个模块。
+
+```mermaid
+flowchart TD
+    R["KmpReflection.register(Module)"] --> N["只记下 classNames<br/>什么都不生成"]
+    L["KmpClasses.byName / of / byNameOrNull"] --> H{"运行时索引命中？"}
+    H -- 是 --> C["直接返回已生成的 KmpClass"]
+    H -- 否 --> Q{"按名字能解析到？"}
+    Q -- 是 --> B["生成该类并建索引"]
+    Q -- 否 --> I["退化为身份扫描<br/>（生成全部类）"]
+    S["all / find / annotatedWith / implementing"] --> A["生成全部类"]
+```
+
+`of(KClass)` 先查运行时类索引，再查限定名，最后查唯一的简单名。身份扫描只作为兜底，留给
+报不出可用名字的目标（Kotlin/JS 与 Wasm）；它会生成全部类，所以只在前几条都没命中时才会走到。
+

@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.BYTE_ARRAY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
@@ -71,10 +72,28 @@ internal class RegistryWriter {
                     .build(),
             )
             .addProperty(
-                PropertySpec.builder("classes", kclassList.parameterizedBy(KmpNames.KMP_CLASS), KModifier.OVERRIDE)
-                    .initializer(classList(classes))
+                PropertySpec.builder(
+                    "classes",
+                    kclassList.parameterizedBy(KmpNames.KMP_CLASS),
+                    KModifier.OVERRIDE,
+                )
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addCode("return classNames.mapNotNull { name -> load(name) }")
+                            .build(),
+                    )
                     .build(),
             )
+            .addProperty(
+                PropertySpec.builder(
+                    "classNames",
+                    kclassList.parameterizedBy(ClassName("kotlin", "String")),
+                    KModifier.OVERRIDE,
+                )
+                    .initializer(nameList(classes))
+                    .build(),
+            )
+            .addFunction(loadFunction(classes))
         if (resources.isNotEmpty()) {
             moduleObject.addProperty(
                 PropertySpec.builder(
@@ -89,17 +108,38 @@ internal class RegistryWriter {
         return builder.addType(moduleObject.build()).build()
     }
 
-    private fun classList(classes: List<ClassModel>): CodeBlock {
+    private fun nameList(classes: List<ClassModel>): CodeBlock {
         if (classes.isEmpty()) return CodeBlock.of("emptyList()")
         return CodeBlock.builder().apply {
             add("listOf(\n")
             indent()
             classes.sortedBy { it.qualifiedName }.forEach { model ->
-                add("%N,\n", model.valueName)
+                add("%S,\n", model.qualifiedName)
             }
             unindent()
             add(")")
         }.build()
+    }
+
+    /**
+     * The per-name loader: each branch returns the class's own `by lazy` property, so a lookup builds
+     * one class and a module with a hundred classes costs nothing until something is asked for.
+     */
+    private fun loadFunction(classes: List<ClassModel>): FunSpec {
+        val builder = FunSpec.builder("load")
+            .addModifiers(KModifier.OVERRIDE)
+            .addParameter("qualifiedName", ClassName("kotlin", "String"))
+            .returns(KmpNames.KMP_CLASS.copy(nullable = true))
+        if (classes.isEmpty()) {
+            return builder.addStatement("return null").build()
+        }
+        builder.beginControlFlow("return when (qualifiedName)")
+        classes.sortedBy { it.qualifiedName }.forEach { model ->
+            builder.addStatement("%S -> %N", model.qualifiedName, model.valueName)
+        }
+        builder.addStatement("else -> null")
+        builder.endControlFlow()
+        return builder.build()
     }
 
     private fun resourceList(resources: List<ResourceEntry>): CodeBlock {

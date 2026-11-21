@@ -45,16 +45,13 @@
 [docs/development/tasks.md](docs/development/tasks.md) 的 S 节。
 
 - 总计：9
-- 已完成：3
+- 已完成：6
 - 明确不做：1
-- 待完成：5
+- 待完成：2
 
 ### 当前待办
 
-- [ ] 95 注册表按需解析，生成的 `by lazy` 真正生效
-- [ ] 96 `KmpClasses.of(KClass)` 索引
-- [ ] 97 层级语义：`superclasses` → `reflectedSupertypes`，补 `isSubclassOf` / `allFunctions`
-- [ ] 98 文档与文案对齐（variance KDoc、注解默认值、inner 报错、`isInstance` 语义）
+- [ ] 98 文档与文案对齐（README / ksp README 等剩余位置）
 - [ ] 99 边界覆盖用例在四个后端跑通（用例已落地，待 `:demo:allTests` 验证）
 
 ### 注意事项

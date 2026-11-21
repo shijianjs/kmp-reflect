@@ -22,9 +22,9 @@
 | 状态 | 数量 |
 |---|---:|
 | 总计 | 9 |
-| 已完成 | 3 |
+| 已完成 | 6 |
 | 明确不做 | 1 |
-| 待完成 | 5 |
+| 待完成 | 2 |
 
 核对日期：2026-11-22。
 
@@ -371,9 +371,20 @@ background `rgb(37, 99, 235)` / color `rgb(255, 255, 255)` / padding `9px 18px` 
   `Person(args[0], args[1])`、全参）；没有默认值时仍生成原来的单条 lambda，不改变既有生成物形态。
   运行时把 `KmpFunction` / `KmpConstructor` 的实参校验从「个数必须相等」改成「落在允许区间」，
   错误信息写成 `1..3 arguments`。中间默认不缩短区间（`Formatter` 仍要求三个），命名参数式跳过不建模。
-- 95 注册表按需解析，`by lazy` 真正生效（待完成）。
-- 96 `KmpClasses.of(KClass)` 索引（待完成）。
-- 97 层级语义：`superclasses` → `reflectedSupertypes` + `isSubclassOf` / `allFunctions`（待完成）。
+- 95 **注册表按需解析**：`KmpReflectModule` 新增 `classNames` 与 `load(qualifiedName)`；`classes` 在生成物里
+  改成 `classNames.mapNotNull { load(it) }` 的 getter，而 `KmpReflection.register` 只读 `classNames`、
+  把每个名字的取数闭包存进注册表。于是生成的 `internal val kmpClass_… by lazy { … }` 真的只在第一次
+  查到时求值；`KmpClasses.all()` / `find` / `annotatedWith` / `implementing` 才全量生成。
+  手写模块仍可只覆写 `classes`，两个新成员都有基于它的默认实现。
+  *修正来源*：审查说「`by lazy` 是亮点」，但原注册表一注册就 `listOf(所有值)`，延迟从未生效。
+- 96 **`KmpClasses.of(KClass)` 索引**：注册时把 `kclass` 建进 `byRuntime`，查询先查索引，再查限定名、
+  唯一简单名，最后才退化为逐个比较 `KmpClass.kclass` 身份（JS / Wasm 报不出名字时才走这一步，
+  为它全量生成）。JVM 上常见路径是两次 map 命中，不再线性扫描。
+- 97 **层级语义改名 + 两个便捷查询**：`superclasses` → `reflectedSupertypes`（它装的本来就是直接父类型，
+  接口也在内），`allSuperclasses` → `allReflectedSupertypes`；新增 `isSubclassOf(qualifiedName)`
+  （声明自身不算，接口/父类按全名或简单名匹配，沿反射链走）与 `allFunctions()`（本类 + 反射父类型的函数，
+  按名字与参数类型去重，override 不重复、同名不同参算两个）。
+  KSP 生成物的具名参数、demo 断言、双语文档表与 mermaid、`technical-decisions.md` 同步改名。
 - 98 文档与文案对齐（待完成）。
 - 99 边界覆盖用例：`Scoped` / `Box` / `OuterWork`(+`Inner`) / `Meters` / `Speaker` / `Formatter` /
   `Specimen`（待完成）。
@@ -388,6 +399,12 @@ vararg、泛型类只描述、`value class`、`inner`、接口默认实现、注
 1/2/3 三档、`greet` 为 0/1 两档、`copy` 为 0..3 四档；`constructor.new("Ada")` 得到 `age = 0`、
 `greet()` 得到 `"Hello, Ada!"`、`copy("Grace")` 只改姓名，`new()`（低于下限）仍抛
 `KmpReflectException`；`Formatter.format` 因中间默认仍只有全参一档，传两个参数照样抛错。
+
+验证（95–97）：`:demo:reflectionTest` 27 项全绿、`:kmp-reflect-core:jvmTest` 15 项全绿、`detekt` 0 findings。
+生成物实测：`DemoReflection` 只有 `classNames` 字面量、`classes` 是 `mapNotNull { load(it) }`、
+`load` 是 17 个分支的 `when`，注册时不再构造任何 `KmpClass`。core 新用例用计数 `load` 证明
+「注册 0 次、单查 1 次、二次命中不再加载、`all()` 才补齐」；demo 断言 `Calculator` 的
+`isSubclassOf("Machine")` 为真、自身为假，`allFunctions()` 合并出 4 个自有 + 1 个继承、共 5 个。
 
 ## 明确不做
 

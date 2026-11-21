@@ -29,9 +29,11 @@
 
 - 每个被标注的类生成一段 `KmpClass` 构造代码（`private val ... by lazy { KmpClass(...) }`），
   成员调用能力以 lambda 形式内联（`invoke = { receiver, args -> (receiver as Foo).bar(args[0] as Int) }`）。
-- 父类型里凡是**同模块内也参与反射**的，直接链接到对方的 `KmpClass`（`superclasses = listOf(pkg.kmpClass_X)`），
-  这样 `allSuperclasses` 沿链上溯时拿到的仍是真元数据而不是名字；跨模块的父类型只留在 `supertypes` 里
-  （别处生成的值是 `internal`，链不上）。
+- 父类型里凡是**同模块内也参与反射**的，直接链接到对方的 `KmpClass`（`reflectedSupertypes = listOf(pkg.kmpClass_X)`，
+  接口也算，所以不叫 `superclasses`），这样 `allReflectedSupertypes` 沿链上溯时拿到的仍是真元数据而不是名字；
+  跨模块的父类型只留在 `supertypes` 里（别处生成的值是 `internal`，链不上）。
+- 注册表存的是名字 + 取数闭包，模块的 `classes` 只是 `classNames.mapNotNull { load(it) }`：注册不解引用，
+  第一次查询才生成那一个类的元数据；`all()` / `find` / `implementing` 这类扫描才会全量生成。
 - 不做运行时类加载、不读资源文件、不做失败重试：生成的是普通 Kotlin 源码，跨平台一致，
   消费方编译不过就是编译不过，不会留到运行时才炸。
 - 类型信息用自建的 `KmpTypeRef` 表达（`qualifiedName` / `arguments` / `nullable` / `runtime: KClass<*>?`），

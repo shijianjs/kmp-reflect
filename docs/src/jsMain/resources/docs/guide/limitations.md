@@ -37,10 +37,12 @@ flowchart TD
 - **Defaults are only applied at the tail.** A trailing run of parameters with defaults may be omitted
   (`new("Ada")`, `greet()`); a default in the middle keeps every parameter after it required, because
   the generated call is positional. Named-argument skipping is not modelled.
-- **Supertype links stop at the module boundary.** `superclasses` links the declared supertypes that
-  were reflected in the *same module*, and `allSuperclasses` walks that chain. A supertype from another
+- **Supertype links stop at the module boundary.** `reflectedSupertypes` links the declared supertypes
+  that were reflected in the *same module* (interfaces included), and `allReflectedSupertypes` walks
+  that chain; `isSubclassOf(name)` and `allFunctions()` follow it too. A supertype from another
   artifact stays in `supertypes` only, because its generated metadata is `internal` there; use
-  `KmpClasses.implementing(name)` to match by name across everything registered.
+  `KmpClasses.implementing(name)` to match by name across everything registered. Inherited members
+  from an unreflected supertype are absent from `allFunctions()`.
 - **Annotations are a snapshot.** Values are read from the source at compile time; an annotation whose
   argument is computed elsewhere is recorded as that expression's value only when it is a literal.
 

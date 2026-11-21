@@ -21,9 +21,10 @@ import kotlin.reflect.KClass
  * @property annotations annotations written on the declaration.
  * @property typeParameters the declaration's type parameters, in order.
  * @property supertypes directly declared supertypes, in source order.
- * @property superclasses metadata of the declared supertypes that were reflected in the same module,
- * in source order. A supertype from another module is only described by [supertypes], because its
- * generated metadata is `internal` there; use [KmpClasses.implementing] for a name-based check.
+ * @property reflectedSupertypes metadata of the declared supertypes that were reflected in the same
+ * module, in source order — interfaces included, so the name says "supertypes", not "superclasses".
+ * A supertype from another module is only described by [supertypes], because its generated metadata is
+ * `internal` there; use [isSubclassOf] or [KmpClasses.implementing] for a name-based check.
  * @property constructors declared constructors.
  * @property functions declared member functions (including property accessors? no — accessors stay
  * inside [properties]).
@@ -45,7 +46,7 @@ public class KmpClass(
     public val annotations: List<KmpAnnotation> = emptyList(),
     public val typeParameters: List<KmpTypeParameter> = emptyList(),
     public val supertypes: List<KmpTypeRef> = emptyList(),
-    public val superclasses: List<KmpClass> = emptyList(),
+    public val reflectedSupertypes: List<KmpClass> = emptyList(),
     public val constructors: List<KmpConstructor> = emptyList(),
     public val functions: List<KmpFunction> = emptyList(),
     public val properties: List<KmpProperty> = emptyList(),
@@ -99,27 +100,79 @@ public class KmpClass(
     public fun isInstance(value: Any?): Boolean = runtime?.isInstance(value) ?: false
 
     /**
-     * Every reflected superclass reachable from this class, nearest first, each name once.
+     * Every reflected supertype reachable from this class, nearest first, each name once.
      *
-     * Stops at the first supertype that was not reflected, so a chain that leaves the module is
+     * Interface supertypes are included, because that is what [reflectedSupertypes] holds. The walk
+     * stops at the first supertype that was not reflected, so a chain that leaves the module is
      * reported as the reflected prefix.
      */
-    public val allSuperclasses: List<KmpClass>
+    public val allReflectedSupertypes: List<KmpClass>
         get() {
             val seen = LinkedHashMap<String, KmpClass>()
-            val pending = ArrayDeque(superclasses)
+            val pending = ArrayDeque(reflectedSupertypes)
             while (pending.isNotEmpty()) {
                 val next = pending.removeFirst()
                 if (next.qualifiedName == qualifiedName) continue
                 if (seen.containsKey(next.qualifiedName)) continue
                 seen[next.qualifiedName] = next
-                pending.addAll(next.superclasses)
+                pending.addAll(next.reflectedSupertypes)
             }
             return seen.values.toList()
         }
 
+    /**
+     * Whether this declaration extends or implements [qualifiedName].
+     *
+     * The declaration itself does not count — ask [KmpClasses.implementing] for "who reaches this,
+     * including the class itself". Names match in full or by simple name, and the walk follows
+     * reflected supertypes while treating other declared supertypes as names only.
+     */
+    public fun isSubclassOf(qualifiedName: String): Boolean {
+        if (qualifiedName.isEmpty()) return false
+        return supertypes.any { supertype ->
+            supertype.qualifiedName == qualifiedName || supertype.simpleName == qualifiedName ||
+                reflectedSupertype(supertype.qualifiedName)?.reachesType(qualifiedName, mutableSetOf()) == true
+        }
+    }
+
+    /**
+     * Every function declared here or by a reflected supertype, nearest declaration first.
+     *
+     * A function is deduplicated by name and parameter types, so an override does not appear twice
+     * while a genuine overload does. Members of supertypes that were not reflected are absent; use
+     * [supertypes] or [KmpClasses.implementing] for name-based questions.
+     */
+    public fun allFunctions(): List<KmpFunction> {
+        val seen = mutableSetOf<String>()
+        val result = mutableListOf<KmpFunction>()
+        val visited = mutableSetOf<String>()
+        fun collect(kmpClass: KmpClass) {
+            if (!visited.add(kmpClass.qualifiedName)) return
+            kmpClass.functions.forEach { function ->
+                val signature = function.signature
+                if (seen.add(signature)) result += function
+            }
+            kmpClass.reflectedSupertypes.forEach(::collect)
+        }
+        collect(this)
+        return result
+    }
+
     /** Functions with the given name, in declaration order. */
     public fun functionsNamed(name: String): List<KmpFunction> = functions.filter { it.name == name }
+
+    /** The reflected supertype with the given qualified name, or `null` when it was not reflected. */
+    private fun reflectedSupertype(qualifiedName: String): KmpClass? =
+        reflectedSupertypes.firstOrNull { it.qualifiedName == qualifiedName }
+
+    private fun reachesType(target: String, visited: MutableSet<String>): Boolean {
+        if (qualifiedName == target || simpleName == target) return true
+        if (!visited.add(qualifiedName)) return false
+        return supertypes.any { supertype ->
+            supertype.qualifiedName == target || supertype.simpleName == target ||
+                reflectedSupertype(supertype.qualifiedName)?.reachesType(target, visited) == true
+        }
+    }
 
     /** The first function with the given name, and with a parameter list of the given arity when [arity] is given. */
     public fun function(name: String, arity: Int? = null): KmpFunction? = functions.firstOrNull {

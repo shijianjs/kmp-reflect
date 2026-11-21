@@ -15,12 +15,23 @@ import kotlin.reflect.KClass
  * KmpClasses.annotatedWith<Record>()
  * ```
  *
+ * Registration is lazy: a module only records its class names, and a class's metadata is built the
+ * first time a lookup touches it. Scans ([all], [find], [annotatedWith], [implementing]) are the only
+ * operations that build everything, because they have to look at everything.
+ *
  * Scanning only ever sees classes whose module was registered — which is exactly the classes the
  * processor was told to reflect. There is no classpath walking at runtime, and nothing is loaded.
  */
 public object KmpClasses {
+    /** Metadata that has been built so far, by qualified name. */
     private val byName: MutableMap<String, KmpClass> = mutableMapOf()
     private val bySimpleName: MutableMap<String, MutableList<KmpClass>> = mutableMapOf()
+
+    /** Built metadata keyed by its runtime class, so `of(KClass)` does not have to scan. */
+    private val byRuntime: MutableMap<KClass<*>, KmpClass> = mutableMapOf()
+
+    /** Names registered but not built yet, with the callable that builds one of them. */
+    private val loaders: MutableMap<String, () -> KmpClass?> = mutableMapOf()
 
     /** Registers [classes], replacing earlier entries with the same qualified name. */
     public fun register(classes: List<KmpClass>) {
@@ -34,28 +45,45 @@ public object KmpClasses {
 
     /** Registers one class, replacing an earlier entry with the same qualified name. */
     public fun register(kmpClass: KmpClass) {
-        val previous = byName.put(kmpClass.qualifiedName, kmpClass)
-        if (previous != null) {
-            bySimpleName[previous.simpleName]?.remove(previous)
+        loaders.remove(kmpClass.qualifiedName)
+        index(kmpClass)
+    }
+
+    /**
+     * Records [classNames] without building anything; [load] runs on the first lookup of one name.
+     *
+     * This is how [KmpReflection.register] wires a module: the module decides whether a name is
+     * backed by an eager list or by a lazy property, and the registry only pays for what is asked.
+     */
+    internal fun register(classNames: List<String>, load: (String) -> KmpClass?) {
+        classNames.forEach { qualifiedName ->
+            loaders[qualifiedName] = { load(qualifiedName) }
         }
-        bySimpleName.getOrPut(kmpClass.simpleName) { mutableListOf() }.add(kmpClass)
     }
 
     /** Forgets every registered class. Intended for tests. */
     public fun clear() {
         byName.clear()
         bySimpleName.clear()
+        byRuntime.clear()
+        loaders.clear()
     }
 
-    /** How many classes are registered. */
+    /** How many classes are registered, built or not. */
     public val size: Int
-        get() = byName.size
+        get() = (byName.keys + loaders.keys).size
 
-    /** Every registered class, sorted by qualified name. */
-    public fun all(): List<KmpClass> = byName.values.sortedBy { it.qualifiedName }
+    /** Every registered class, sorted by qualified name. Builds metadata that was not needed yet. */
+    public fun all(): List<KmpClass> {
+        // Loading may re-enter, so drain by key instead of iterating the map.
+        while (loaders.isNotEmpty()) {
+            resolve(loaders.keys.first())
+        }
+        return byName.values.sortedBy { it.qualifiedName }
+    }
 
     /** The class with the given qualified name, or `null` when it was not registered. */
-    public fun byNameOrNull(qualifiedName: String): KmpClass? = byName[qualifiedName]
+    public fun byNameOrNull(qualifiedName: String): KmpClass? = resolve(qualifiedName)
 
     /**
      * The class with the given qualified name.
@@ -71,18 +99,22 @@ public object KmpClasses {
     /**
      * The metadata for [type].
      *
+     * Looks the runtime class up in the index first, then by qualified name, then by a unique simple
+     * name. Only when a target reports no usable name does it fall back to comparing [KmpClass.kclass]
+     * identity, which has to build every class to compare.
+     *
      * @throws KmpReflectException when the class is not registered.
      */
     public fun of(type: KClass<*>): KmpClass {
-        // Identity first: it works on every target, including the ones without runtime names.
-        byName.values.firstOrNull { candidate -> candidate.runtimeKClass == type }?.let { return it }
+        byRuntime[type]?.let { return it }
         val qualifiedName = KmpPlatformQualifiedName(type)
         if (qualifiedName != null) {
-            byNameOrNull(qualifiedName)?.let { return it }
+            resolve(qualifiedName)?.let { return it }
             // A local or nested class may only be known by its simple name, which is still unique in
             // practice; anything ambiguous stays unresolved.
             bySimpleName[qualifiedName.substringAfterLast('.')].orEmpty().singleOrNull()?.let { return it }
         }
+        all().firstOrNull { candidate -> candidate.kclass == type }?.let { return it }
         throw KmpReflectException(
             "No reflected class for '${qualifiedName ?: type}'. Annotate the class with @KmpReflect " +
                 "(or make it implement KmpReflectable) and register the module it belongs to.",
@@ -134,6 +166,28 @@ public object KmpClasses {
     /** Every registered class whose supertype chain reaches [type]. */
     public fun implementing(type: KClass<*>): List<KmpClass> =
         implementing(KmpPlatformQualifiedName(type) ?: return emptyList())
+
+    /** Built metadata for [qualifiedName], building it through its loader on first use. */
+    private fun resolve(qualifiedName: String): KmpClass? {
+        byName[qualifiedName]?.let { return it }
+        val load = loaders.remove(qualifiedName) ?: return null
+        val loaded = load() ?: return null
+        index(loaded)
+        return loaded
+    }
+
+    private fun index(kmpClass: KmpClass) {
+        val previous = byName.put(kmpClass.qualifiedName, kmpClass)
+        if (previous != null) {
+            bySimpleName[previous.simpleName]?.let { bucket ->
+                bucket.remove(previous)
+                if (bucket.isEmpty()) bySimpleName.remove(previous.simpleName)
+            }
+            previous.kclass?.let { byRuntime.remove(it) }
+        }
+        bySimpleName.getOrPut(kmpClass.simpleName) { mutableListOf() }.add(kmpClass)
+        kmpClass.kclass?.let { byRuntime[it] = kmpClass }
+    }
 
     private fun KmpClass.reachesSupertype(target: String, visited: MutableSet<String>): Boolean {
         if (target.isEmpty()) return false

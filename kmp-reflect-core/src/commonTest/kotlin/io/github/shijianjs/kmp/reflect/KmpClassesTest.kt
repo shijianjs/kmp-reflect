@@ -139,6 +139,101 @@ class KmpClassesTest {
     }
 
     @Test
+    fun `subtype checks follow reflected supertypes and stop at the declaration`() {
+        val base = KmpClass("com.example.Base")
+        val middle = KmpClass(
+            "com.example.Middle",
+            supertypes = listOf(KmpTypeRef("com.example.Base")),
+            reflectedSupertypes = listOf(base),
+        )
+        val derived = KmpClass(
+            "com.example.Derived",
+            supertypes = listOf(KmpTypeRef("com.example.Middle")),
+            reflectedSupertypes = listOf(middle),
+        )
+
+        assertTrue(derived.isSubclassOf("com.example.Middle"))
+        assertTrue(derived.isSubclassOf("com.example.Base"))
+        assertTrue(derived.isSubclassOf("Base"))
+        assertFalse(derived.isSubclassOf("com.example.Derived"))
+        assertFalse(derived.isSubclassOf("com.example.Other"))
+    }
+
+    @Test
+    fun `all functions deduplicate an inherited override and keep an overload`() {
+        val greet = KmpFunction(
+            name = "greet",
+            returnType = KmpTypeRef("kotlin.String"),
+            parameters = listOf(KmpParameter("prefix", KmpTypeRef("kotlin.String"), 0)),
+        )
+        val greetOverload = KmpFunction(
+            name = "greet",
+            returnType = KmpTypeRef("kotlin.String"),
+            parameters = listOf(KmpParameter("times", KmpTypeRef("kotlin.Int"), 0)),
+        )
+        val base = KmpClass("com.example.Base", functions = listOf(greet, greetOverload))
+        val override = KmpFunction(
+            name = "greet",
+            returnType = KmpTypeRef("kotlin.String"),
+            parameters = listOf(KmpParameter("prefix", KmpTypeRef("kotlin.String"), 0)),
+        )
+        val derived = KmpClass(
+            "com.example.Derived",
+            supertypes = listOf(KmpTypeRef("com.example.Base")),
+            reflectedSupertypes = listOf(base),
+            functions = listOf(override),
+        )
+
+        assertEquals(2, derived.allFunctions().size)
+        assertEquals("greet", derived.allFunctions().first().name)
+        assertEquals(2, base.allFunctions().size)
+    }
+
+    @Test
+    fun `registration records names and builds metadata on demand`() {
+        var loads = 0
+        val module = object : KmpReflectModule {
+            override val module: String = "lazy"
+
+            // Registration must not read this: the whole point is that nothing is built up front.
+            override val classes: List<KmpClass>
+                get() = error("`classes` must not be read during registration")
+
+            override val classNames: List<String> = listOf("com.example.A", "com.example.B")
+
+            override fun load(qualifiedName: String): KmpClass? {
+                loads++
+                return KmpClass(qualifiedName)
+            }
+        }
+
+        KmpReflection.register(module)
+        assertEquals(2, KmpClasses.size)
+        assertEquals(0, loads)
+
+        assertEquals("com.example.A", KmpClasses.byName("com.example.A").qualifiedName)
+        assertEquals(1, loads)
+
+        // A second lookup is served from the built metadata.
+        KmpClasses.byName("com.example.A")
+        assertEquals(1, loads)
+
+        // A scan has to build the rest.
+        assertEquals(2, KmpClasses.all().size)
+        assertEquals(2, loads)
+    }
+
+    @Test
+    fun `runtime class lookup is answered from the index`() {
+        KmpReflection.register(
+            module(KmpClass("com.example.Text", simpleName = "Text", runtime = String::class)),
+        )
+
+        assertEquals("com.example.Text", KmpClasses.of(String::class).qualifiedName)
+        assertFailsWith<KmpReflectException> { KmpClasses.of(Int::class) }
+    }
+
+    @Test
     fun `type references answer instance checks`() {
         assertTrue(KmpTypeRef("kotlin.String").isInstance("x"))
         assertFalse(KmpTypeRef("kotlin.String").isInstance(null))

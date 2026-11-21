@@ -71,7 +71,7 @@ internal class MetadataWriter {
         add("annotations = ").annotationList(model.annotations).add(",\n")
         add("typeParameters = ").typeParameterList(model.typeParameters).add(",\n")
         add("supertypes = ").typeList(model.supertypes).add(",\n")
-        add("superclasses = ").linkedClassList(model.reflectedSupertypeNames).add(",\n")
+        add("reflectedSupertypes = ").linkedClassList(model.reflectedSupertypeNames).add(",\n")
         add("constructors = ").constructorList(model.constructors).add(",\n")
         add("functions = ").functionList(model.functions).add(",\n")
         add("properties = ").propertyList(model.properties).add(",\n")

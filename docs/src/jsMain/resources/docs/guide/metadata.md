@@ -18,7 +18,7 @@ Generated metadata is plain data. Nothing is loaded, and every object is immutab
 | `annotations` | `List<KmpAnnotation>` written on the declaration |
 | `typeParameters` | `KmpTypeParameter` with bounds and nullability |
 | `supertypes` | Directly declared supertypes; not transitive |
-| `superclasses` | Directly declared supertypes that were reflected in the same module, linked to their metadata; `allSuperclasses` walks the chain |
+| `reflectedSupertypes` | Directly declared supertypes that were reflected in the same module, interfaces included, linked to their metadata; `allReflectedSupertypes` walks the chain |
 | `constructors`, `functions`, `properties` | Declared members, `@KmpReflectIgnore` members removed |
 | `enumEntries` | `KmpEnumEntry` with name, ordinal, annotations, and the instance itself |
 | `companion`, `nestedClasses` | Only the ones that were reflected themselves |
@@ -28,15 +28,17 @@ Generated metadata is plain data. Nothing is loaded, and every object is immutab
 Its conveniences are lookups rather than scans: `function(name, arity)`, `functionsNamed(name)`,
 `property(name)`, `constructor(arity)`, `enumEntry(name)`, `annotation(qualifiedName)`,
 `annotationOf<A>()`, plus `isInterface`, `isObject`, `isEnum`, `isAbstract`, `isData`, `isProxyable`
-and `isInstance(value)`.
+and `isInstance(value)`. Two hierarchy questions are answered without a scan: `isSubclassOf(name)`
+(the declaration itself does not count) and `allFunctions()` (declared functions plus those of
+reflected supertypes, deduplicated by name and parameter types).
 
 ```mermaid
 flowchart LR
     C["KmpClass"] --> N["identity: qualifiedName / simpleName<br/>packageName / kind"]
     C --> M["declaration: visibility / modifiers<br/>annotations / typeParameters"]
-    C --> H["hierarchy: supertypes / superclasses<br/>nestedClasses / companion"]
+    C --> H["hierarchy: supertypes / reflectedSupertypes<br/>allReflectedSupertypes / isSubclassOf<br/>nestedClasses / companion"]
     C --> MB["members: constructors / functions<br/>properties / enumEntries"]
-    C --> L["lookups: function(name, arity) / property(name)<br/>annotation(name) / enumEntry(name)"]
+    C --> L["lookups: function(name, arity) / property(name)<br/>annotation(name) / enumEntry(name)<br/>allFunctions()"]
     MB --> INV["KmpFunction.invoke / KmpProperty.get<br/>only where a lambda was generated"]
 ```
 
@@ -136,3 +138,25 @@ supertype chain of registered classes, including supertypes that were never refl
 Only classes whose module object was registered. That is the design: no classpath walking, no
 accidental retention, and on Kotlin/JS nothing to walk in the first place. Register in tests and
 remember that `KmpClasses.clear()` exists.
+
+## When metadata is built
+
+Registration is lazy. A module hands the registry its `classNames`, and each name's metadata —
+the generated `internal val kmpClass_… by lazy { … }` — is built the first time something asks for
+that name. A lookup therefore costs one class, not one module:
+
+```mermaid
+flowchart TD
+    R["KmpReflection.register(Module)"] --> N["record classNames only<br/>nothing built"]
+    L["KmpClasses.byName / of / byNameOrNull"] --> H{"runtime index hit?"}
+    H -- yes --> C["return the built KmpClass"]
+    H -- no --> Q{"name resolves?"}
+    Q -- yes --> B["build + index that class"]
+    Q -- no --> I["fall back to identity scan<br/>(builds every class)"]
+    S["all / find / annotatedWith / implementing"] --> A["build every class"]
+```
+
+`of(KClass)` consults a runtime-class index first, then the qualified name, then a unique
+simple name. The identity scan is the last resort, kept for targets that report no usable name
+(Kotlin/JS and Wasm); it builds all classes, so it is only reached when nothing else matches.
+

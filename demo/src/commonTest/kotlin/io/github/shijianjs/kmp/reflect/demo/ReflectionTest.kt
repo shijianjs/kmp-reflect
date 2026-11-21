@@ -176,12 +176,37 @@ class ReflectionTest {
     @Test
     fun `reflected supertypes are linked to their metadata`() {
         val calculator = KmpClasses.of(Calculator::class)
-        assertEquals(listOf("$model.Machine"), calculator.superclasses.map { it.qualifiedName })
-        // `Machine` itself has no reflected superclass, so the chain ends there.
-        assertEquals(listOf("$model.Machine"), calculator.allSuperclasses.map { it.qualifiedName })
-        assertEquals(1, calculator.superclasses.single().function("power", 0)?.invoke(Machine()))
-        // `Person` has no declared superclass worth linking (data classes only add `Any`).
-        assertTrue(KmpClasses.of(Person::class).superclasses.isEmpty())
+        assertEquals(listOf("$model.Machine"), calculator.reflectedSupertypes.map { it.qualifiedName })
+        // `Machine` itself has no reflected supertype, so the chain ends there.
+        assertEquals(listOf("$model.Machine"), calculator.allReflectedSupertypes.map { it.qualifiedName })
+        assertEquals(1, calculator.reflectedSupertypes.single().function("power", 0)?.invoke(Machine()))
+        // `Person` declares no supertype worth linking (data classes only add `Any`).
+        assertTrue(KmpClasses.of(Person::class).reflectedSupertypes.isEmpty())
+    }
+
+    @Test
+    fun `subtype questions answer by name and by reflected chain`() {
+        val calculator = KmpClasses.of(Calculator::class)
+        assertTrue(calculator.isSubclassOf("$model.Machine"))
+        assertTrue(calculator.isSubclassOf("Machine"))
+        // The declaration itself does not count, and neither does an unrelated name.
+        assertFalse(calculator.isSubclassOf("$model.Calculator"))
+        assertFalse(calculator.isSubclassOf("$model.Person"))
+        // An interface with no declared supertype reaches nothing.
+        assertFalse(KmpClasses.of(Greeter::class).isSubclassOf("$model.Speaker"))
+    }
+
+    @Test
+    fun `all functions merge the reflected hierarchy once`() {
+        // `Calculator` declares four functions, and `power` comes from `Machine`: five, once each.
+        val calculator = KmpClasses.of(Calculator::class)
+        val declared = calculator.functions.map { it.name }
+        val inherited = KmpClasses.of(Machine::class).functions.map { it.name }
+
+        assertEquals((declared + inherited).toSet(), calculator.allFunctions().map { it.name }.toSet())
+        assertEquals(declared.size + inherited.size, calculator.allFunctions().size)
+        // The inherited one is reachable through the merged list, which is the point of the merge.
+        assertEquals(1, calculator.allFunctions().filter { it.name == "power" }.size)
     }
 
     @Test

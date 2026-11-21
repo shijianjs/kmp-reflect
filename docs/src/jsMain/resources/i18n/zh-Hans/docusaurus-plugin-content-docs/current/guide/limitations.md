@@ -30,9 +30,10 @@ flowchart TD
 - **没有扩展成员。** 扩展函数与扩展属性不参与反射；它们在字节码意义上也不是类的成员。
 - **默认值只作用于尾部。** 尾部连续的默认参数可以省略（`new("Ada")`、`greet()`）；默认值在中间时，它之后
   的参数仍必须给，因为生成的调用是按位置传。命名参数式的“跳过中间”不建模。
-- **父类型链接止于模块边界。** `superclasses` 链接的是**同一模块内**参与反射的直接父类型，
-  `allSuperclasses` 沿这条链上溯。来自其他产物的父类型只出现在 `supertypes` 里（那边的生成元数据是
-  `internal`）；需要跨已注册类按名字匹配时用 `KmpClasses.implementing(name)`。
+- **父类型链接止于模块边界。** `reflectedSupertypes` 链接的是**同一模块内**参与反射的直接父类型（接口也算），
+  `allReflectedSupertypes` 沿这条链上溯；`isSubclassOf(name)` 与 `allFunctions()` 也沿同一条链。来自其他产物的
+  父类型只出现在 `supertypes` 里（那边的生成元数据是 `internal`）；需要跨已注册类按名字匹配时用
+  `KmpClasses.implementing(name)`。未被反射的父类型上的成员不会出现在 `allFunctions()` 里。
 - **注解是快照。** 值在编译期从源码读取；实参来自别处的表达式只有在它是字面量时才会被原样记录。
 
 ## 代理
