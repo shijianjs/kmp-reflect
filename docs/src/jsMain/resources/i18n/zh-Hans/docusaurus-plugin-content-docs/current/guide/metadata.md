@@ -29,6 +29,16 @@ description: KmpClass 暴露了什么，以及“可调用”的含义。
 `annotationOf<A>()`，以及 `isInterface`、`isObject`、`isEnum`、`isAbstract`、`isData`、`isProxyable`
 和 `isInstance(value)`。
 
+```mermaid
+flowchart LR
+    C["KmpClass"] --> N["身份：qualifiedName / simpleName<br/>packageName / kind"]
+    C --> M["声明面：visibility / modifiers<br/>annotations / typeParameters"]
+    C --> H["层级：supertypes / superclasses<br/>nestedClasses / companion"]
+    C --> MB["成员：constructors / functions<br/>properties / enumEntries"]
+    C --> L["查找：function(name, arity) / property(name)<br/>annotation(name) / enumEntry(name)"]
+    MB --> INV["KmpFunction.invoke / KmpProperty.get<br/>只在生成了 lambda 的地方可调用"]
+```
+
 ## 函数与调用
 
 ```kotlin

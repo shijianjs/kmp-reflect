@@ -72,6 +72,16 @@ ksp {
 Doing it by hand also means declaring the resource directories as inputs of the KSP tasks, otherwise
 editing a resource leaves the previous content compiled in; the plugin does that for you.
 
+```mermaid
+flowchart LR
+    PLUGIN["Gradle plugin io.github.shijianjs.kmp-reflect"] --> CORE["kmp-reflect-core<br/>the runtime, a multiplatform library"]
+    PLUGIN --> PROC["kmp-reflect-ksp<br/>the processor, a JVM artifact"]
+    PROC --> PER["the per-target ksp configuration"]
+    PER --> OPT["@KmpReflect / KmpReflectable classes"]
+    OPT --> MOD["the generated module object"]
+    MOD --> USE["KmpReflection.register(...) then KmpClasses.of(reified T)"]
+```
+
 ## Opting a class in
 
 Two ways, and they can be mixed:

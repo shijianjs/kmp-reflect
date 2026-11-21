@@ -32,6 +32,14 @@ ksp {
 MIME 由扩展名推断 —— `application/json`、`image/svg+xml`、`text/markdown`、`font/woff2` 等，
 未知扩展名回退到 `application/octet-stream`，所以非常规文件也能被描述。
 
+```mermaid
+flowchart LR
+    DIR["data/ 以及别的目录<br/>kmpReflect { resources.from(...) }"] --> KSP["处理器在编译期读出字节"]
+    KSP --> GEN["生成 KmpResource<br/>+ 惰性 Base64 解码的 ByteArray"]
+    GEN --> MOD["登记进模块对象"]
+    MOD --> API["KmpResources.byPath / all / allIn / directories"]
+```
+
 ## 生成形态
 
 ```kotlin title="generated"

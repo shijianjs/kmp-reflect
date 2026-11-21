@@ -67,6 +67,16 @@ ksp {
 
 手写就得自己把资源目录声明成 KSP 任务的输入，否则改了资源还是编译进旧内容；插件替你做了这件事。
 
+```mermaid
+flowchart LR
+    PLUGIN["Gradle 插件 io.github.shijianjs.kmp-reflect"] --> CORE["kmp-reflect-core<br/>运行时，多平台库"]
+    PLUGIN --> PROC["kmp-reflect-ksp<br/>处理器，JVM 产物"]
+    PROC --> PER["每个声明目标上的 ksp 配置"]
+    PER --> OPT["@KmpReflect / KmpReflectable 选中的类"]
+    OPT --> MOD["生成的模块对象"]
+    MOD --> USE["KmpReflection.register(...) 之后 KmpClasses.of(reified T)"]
+```
+
 ## 让一个类参与反射
 
 两种方式，可以混用：

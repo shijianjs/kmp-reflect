@@ -7,6 +7,17 @@ description: v0.1 做不到什么，以及后续计划。
 
 下面每一条都是决策而非疏漏；每条都写明了后果，便于判断是否影响你。
 
+```mermaid
+flowchart TD
+    M["一个声明出来的成员"] --> Q1{"签名里有类型参数？"}
+    Q1 -- 是 --> D["只描述，isInvokable = false"]
+    Q1 -- 否 --> Q2{"suspend？"}
+    Q2 -- 是 --> S["invokeSuspend，只能从协程里调"]
+    Q2 -- 否 --> I["invoke / new 真正执行那个 Kotlin 函数"]
+    M --> O["模型外：扩展成员、默认值、别的产物里的超类"]
+    O --> O2["不反射 / 不套默认值 / 只留在 supertypes"]
+```
+
 ## 模型
 
 - **调用 `suspend` 函数必须在协程里。** suspend 函数会被描述，也能调用，但只能从协程内部通过

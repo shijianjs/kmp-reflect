@@ -24,6 +24,15 @@ KmpClasses.of<Person>().function("greet", 1)?.invoke(person, "Hello")  // "Hello
 Nothing is loaded, scanned or allocated at runtime: the metadata is already there, and every call it
 describes is an inlined Kotlin call generated next to the class it belongs to.
 
+```mermaid
+flowchart LR
+    SRC["classes opted in with @KmpReflect / KmpReflectable"] --> KSP["KSP processor<br/>runs once per target"]
+    KSP --> GEN["generated Kotlin: KmpClass / KmpFunction<br/>proxy classes / inlined resources"]
+    GEN --> MOD["the module object (DemoReflection)"]
+    MOD --> REG["KmpReflection.register(DemoReflection)"]
+    REG --> API["KmpClasses / KmpResources / proxy()<br/>at runtime only data that was already written"]
+```
+
 ## What you get
 
 - **Class metadata** — name, package, kind, visibility, modifiers, supertypes, type parameters,

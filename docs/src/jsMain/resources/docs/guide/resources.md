@@ -38,6 +38,14 @@ The MIME type comes from the extension — `application/json`, `image/svg+xml`, 
 `font/woff2`, and so on — with `application/octet-stream` as the fallback, so non-standard files are
 still describable.
 
+```mermaid
+flowchart LR
+    DIR["data/ and any other directory<br/>kmpReflect { resources.from(...) }"] --> KSP["the processor reads the bytes"]
+    KSP --> GEN["generated KmpResource<br/>+ a lazy Base64-decoding ByteArray"]
+    GEN --> MOD["listed in the module object"]
+    MOD --> API["KmpResources.byPath / all / allIn / directories"]
+```
+
 ## The generated shape
 
 ```kotlin title="generated"

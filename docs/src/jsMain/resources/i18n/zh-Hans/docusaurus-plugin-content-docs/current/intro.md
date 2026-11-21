@@ -22,6 +22,15 @@ KmpClasses.of<Person>().function("greet", 1)?.invoke(person, "Hello")  // "Hello
 运行时不加载、不扫描、不额外分配：元数据已经在代码里，每条“反射调用”都是紧挨着目标类生成的普通
 Kotlin 调用。
 
+```mermaid
+flowchart LR
+    SRC["被 @KmpReflect / KmpReflectable 选中的类"] --> KSP["KSP 处理器<br/>每个 target 跑一次"]
+    KSP --> GEN["生成的 Kotlin：KmpClass / KmpFunction<br/>代理类 / 内联资源"]
+    GEN --> MOD["模块对象 DemoReflection"]
+    MOD --> REG["KmpReflection.register(DemoReflection)"]
+    REG --> API["KmpClasses / KmpResources / proxy()<br/>运行时只读已经生成好的数据"]
+```
+
 ## 能得到什么
 
 - **类元数据** —— 名称、包名、种类、可见性、修饰符、父类型、类型参数、构造函数、函数、属性、

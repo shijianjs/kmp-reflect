@@ -30,6 +30,16 @@ Its conveniences are lookups rather than scans: `function(name, arity)`, `functi
 `annotationOf<A>()`, plus `isInterface`, `isObject`, `isEnum`, `isAbstract`, `isData`, `isProxyable`
 and `isInstance(value)`.
 
+```mermaid
+flowchart LR
+    C["KmpClass"] --> N["identity: qualifiedName / simpleName<br/>packageName / kind"]
+    C --> M["declaration: visibility / modifiers<br/>annotations / typeParameters"]
+    C --> H["hierarchy: supertypes / superclasses<br/>nestedClasses / companion"]
+    C --> MB["members: constructors / functions<br/>properties / enumEntries"]
+    C --> L["lookups: function(name, arity) / property(name)<br/>annotation(name) / enumEntry(name)"]
+    MB --> INV["KmpFunction.invoke / KmpProperty.get<br/>only where a lambda was generated"]
+```
+
 ## Functions and invocation
 
 ```kotlin

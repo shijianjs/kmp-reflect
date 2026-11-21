@@ -9,6 +9,17 @@ description: What v0.1 does not do, and what is planned.
 Everything here is a decision, not an oversight; each entry names the consequence so you can tell
 whether it affects you.
 
+```mermaid
+flowchart TD
+    M["a declared member"] --> Q1{"its signature mentions a type parameter?"}
+    Q1 -- yes --> D["described only, isInvokable = false"]
+    Q1 -- no --> Q2{"suspend?"}
+    Q2 -- yes --> S["invokeSuspend, only from inside a coroutine"]
+    Q2 -- no --> I["invoke / new call the real Kotlin function"]
+    M --> O["outside the model: extension members, defaults,<br/>supertypes from another artifact"]
+    O --> O2["not reflected, not applied, kept in supertypes only"]
+```
+
 ## Model
 
 - **`suspend` invocation needs a coroutine.** A `suspend` function is described and callable, but only
