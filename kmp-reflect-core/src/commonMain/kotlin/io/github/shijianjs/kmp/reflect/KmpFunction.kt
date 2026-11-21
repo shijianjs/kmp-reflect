@@ -48,6 +48,13 @@ public class KmpFunction(
     private val invoker: KmpFunctionInvoker? = null,
     private val suspendInvoker: KmpSuspendFunctionInvoker? = null,
 ) {
+    /**
+     * The fewest arguments [invoke] accepts: the trailing parameters that declare a default may be
+     * omitted, so this is the full count minus that run. A default in the middle of the list does not
+     * shorten it — positional calls cannot skip a parameter.
+     */
+    private val minimumArgumentCount: Int = parameters.size - parameters.takeLastWhile { it.hasDefault }.size
+
     /** Whether the declaration is `suspend`. */
     public val isSuspend: Boolean
         get() = KmpModifier.SUSPEND in modifiers
@@ -71,7 +78,8 @@ public class KmpFunction(
      * Calls the function on [receiver] with [arguments].
      *
      * @throws KmpReflectException when the function is not invokable, when the argument count does
-     * not match [parameters], or when the receiver is not an instance of the declaring class.
+     * not fall in the allowed range (trailing defaults may be omitted, a default in the middle may
+     * not), or when the receiver is not an instance of the declaring class.
      */
     public fun invoke(receiver: Any?, vararg arguments: Any?): Any? =
         invoke(receiver, arguments.toList())
@@ -80,7 +88,7 @@ public class KmpFunction(
      * Calls the function on [receiver] with [arguments].
      *
      * @throws KmpReflectException when the function is not invokable or the argument count does not
-     * match [parameters].
+     * fall in the allowed range.
      */
     public fun invoke(receiver: Any?, arguments: List<Any?>): Any? {
         requireArgumentCount(arguments)
@@ -121,11 +129,16 @@ public class KmpFunction(
         invoke(receiver, arguments.toList()) as T
 
     private fun requireArgumentCount(arguments: List<Any?>) {
-        if (parameters.size != arguments.size) {
-            throw KmpReflectException(
-                "Function '$name' takes ${parameters.size} argument(s), got ${arguments.size}.",
-            )
+        if (arguments.size < minimumArgumentCount || arguments.size > parameters.size) {
+            throw KmpReflectException("Function '$name' takes ${arityText()}, got ${arguments.size}.")
         }
+    }
+
+    /** `2 argument(s)` for a fixed arity, `1..3 arguments` when a tail may be omitted. */
+    private fun arityText(): String = if (minimumArgumentCount == parameters.size) {
+        "${parameters.size} argument(s)"
+    } else {
+        "$minimumArgumentCount..${parameters.size} arguments"
     }
 
     /** [entryPoint] is the method the caller should use instead, when there is one. */
@@ -156,19 +169,21 @@ public class KmpConstructor(
     public val isInvokable: Boolean = true,
     private val invoker: ((arguments: List<Any?>) -> Any?)? = null,
 ) {
+    /** The fewest arguments [new] accepts: trailing parameters with a default may be omitted. */
+    private val minimumArgumentCount: Int = parameters.size - parameters.takeLastWhile { it.hasDefault }.size
     /**
      * Creates an instance with [arguments].
      *
-     * Every parameter has to be passed, including ones declared with a default value.
+     * Trailing parameters declared with a default value may be omitted: `new("Ada")` is valid for
+     * `Person(name: String, age: Int = 0, secret: String = "hidden")`. A default in the middle of the
+     * list cannot be skipped, because the generated call passes arguments positionally.
      *
      * @throws KmpReflectException when the constructor is not invokable or the argument count does
-     * not match [parameters].
+     * not fall in the allowed range.
      */
     public fun new(vararg arguments: Any?): Any? {
-        if (parameters.size != arguments.size) {
-            throw KmpReflectException(
-                "Constructor takes ${parameters.size} argument(s), got ${arguments.size}.",
-            )
+        if (arguments.size < minimumArgumentCount || arguments.size > parameters.size) {
+            throw KmpReflectException("Constructor takes ${arityText()}, got ${arguments.size}.")
         }
         val invoker = invoker
             ?: throw KmpReflectException(
@@ -180,6 +195,12 @@ public class KmpConstructor(
 
     /** Creates an instance and casts it to [T]. */
     public inline fun <reified T> newInstance(vararg arguments: Any?): T = new(arguments = arguments) as T
+
+    private fun arityText(): String = if (minimumArgumentCount == parameters.size) {
+        "${parameters.size} argument(s)"
+    } else {
+        "$minimumArgumentCount..${parameters.size} arguments"
+    }
 
     override fun toString(): String = "(${parameters.joinToString(", ") { it.toString() }})"
 }

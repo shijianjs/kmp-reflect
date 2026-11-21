@@ -57,7 +57,9 @@ greet.invokeAs<String>(person, "Hello")
 这些成员仍会被描述（名称、参数、返回类型、注解），因此可以用于展示；调用时会抛出
 `KmpReflectException` 并给出原因。
 
-参数按位置传，默认值不会生效：每个参数都必须给。`vararg` 参数传入元素类型的 `Array`。
+参数按位置传，**尾部连续**声明了默认值的参数可以省略：`greet(prefix: String = "Hello")` 既能
+`greet()` 也能 `greet("Hi")`。默认值出现在参数表中间并不会缩短它——`format(value: Int, mode: String = "-", unit: String)`
+仍然要传三个，因为按位置调用跳不过 `mode`。`vararg` 参数传入元素类型的 `Array`。
 
 成员自带 `visibility`（`PUBLIC` 或 `INTERNAL`）。`private` / `protected` 成员不会出现在元数据里，
 也不是“只描述不调用”：生成文件在类外，调用它们无法编译。

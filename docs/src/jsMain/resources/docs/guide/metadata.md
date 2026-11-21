@@ -59,8 +59,11 @@ expression:
 Such members are still described — name, parameters, return type, annotations — so you can display
 them; they just refuse to run and throw `KmpReflectException` with a reason.
 
-Arguments are positional, defaults are not applied: every parameter has to be passed. `vararg`
-parameters take an `Array` of the element type.
+Arguments are positional, and a **trailing run** of parameters that declare a default may be omitted:
+`greet()` and `greet("Hi")` both work for `greet(prefix: String = "Hello")`. A default in the middle
+of the list does not shorten it — `format(value: Int, mode: String = "-", unit: String)` still needs
+all three, because a positional call cannot skip `mode`. `vararg` parameters take an `Array` of the
+element type.
 
 Members carry their own `visibility` (`PUBLIC` or `INTERNAL`). `private` and `protected` members are
 absent from the metadata rather than described: the generated file is outside the class, so their

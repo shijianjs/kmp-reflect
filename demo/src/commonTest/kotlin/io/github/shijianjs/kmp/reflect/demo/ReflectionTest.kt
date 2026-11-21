@@ -286,6 +286,22 @@ class ReflectionTest {
     }
 
     @Test
+    fun `trailing defaults may be omitted from construction and calls`() {
+        val person = KmpClasses.of(Person::class)
+        val constructor = assertNotNull(person.constructor(3))
+        // `age` and `secret` declare defaults, so they can be left out.
+        val ada = constructor.new("Ada") as Person
+        assertEquals(0, ada.age)
+        // The same rule applies to member calls and to the compiler-generated `copy`.
+        assertEquals("Hello, Ada!", person.function("greet", 1)?.invoke(ada))
+        val grace = assertNotNull(person.function("copy", 3)).invoke(ada, "Grace") as Person
+        assertEquals("Grace", grace.name)
+        assertEquals(0, grace.age)
+        // Below the allowed range the call is still rejected.
+        assertFailsWith<KmpReflectException> { constructor.new() }
+    }
+
+    @Test
     fun `a default in the middle of the list keeps every argument required`() {
         val format = assertNotNull(KmpClasses.of(Formatter::class).function("format", 3))
         // `mode` has a default, but the last parameter does not, so no tail can be omitted.

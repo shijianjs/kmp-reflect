@@ -16,8 +16,8 @@ flowchart TD
     Q1 -- no --> Q2{"suspend?"}
     Q2 -- yes --> S["invokeSuspend, only from inside a coroutine"]
     Q2 -- no --> I["invoke / new call the real Kotlin function"]
-    M --> O["outside the model: extension members, defaults,<br/>supertypes from another artifact"]
-    O --> O2["not reflected, not applied, kept in supertypes only"]
+    M --> O["outside the model: extension members, a default in the middle,<br/>supertypes from another artifact"]
+    O --> O2["extensions absent, middle defaults need every argument,<br/>foreign supertypes matched by name only"]
 ```
 
 ## Model
@@ -34,7 +34,9 @@ flowchart TD
   `internal` members stay, because that file is in the same module.
 - **No extension members.** Extension functions and properties are not reflected; they are not members
   of the class in the bytecode sense either.
-- **No defaults at call time.** Default arguments are not applied by `invoke`: pass every parameter.
+- **Defaults are only applied at the tail.** A trailing run of parameters with defaults may be omitted
+  (`new("Ada")`, `greet()`); a default in the middle keeps every parameter after it required, because
+  the generated call is positional. Named-argument skipping is not modelled.
 - **Supertype links stop at the module boundary.** `superclasses` links the declared supertypes that
   were reflected in the *same module*, and `allSuperclasses` walks that chain. A supertype from another
   artifact stays in `supertypes` only, because its generated metadata is `internal` there; use

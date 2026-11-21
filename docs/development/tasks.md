@@ -22,9 +22,9 @@
 | 状态 | 数量 |
 |---|---:|
 | 总计 | 9 |
-| 已完成 | 2 |
+| 已完成 | 3 |
 | 明确不做 | 1 |
-| 待完成 | 6 |
+| 待完成 | 5 |
 
 核对日期：2026-11-22。
 
@@ -366,7 +366,11 @@ background `rgb(37, 99, 235)` / color `rgb(255, 255, 255)` / padding `9px 18px` 
   `(receiver as Box<*>)`（原来写成 `(receiver as Box)`，泛型类一被反射就编译失败，此前没有泛型类用例）。
 - 93 **成员可见性进元数据**：`KmpFunction` / `KmpProperty` / `KmpConstructor` 增加 `visibility`；
   生成代码只在非 `PUBLIC` 时写该参数。
-- 94 默认参数：尾部省略调用（待完成）。
+- 94 **默认参数：尾部省略调用**：`MetadataWriter.argumentDispatch` 按「尾部连续默认值」算出允许的实参个数
+  区间，生成一个 `when (args.size)`，每个档位一条按位置调用（`Person(args[0])`、
+  `Person(args[0], args[1])`、全参）；没有默认值时仍生成原来的单条 lambda，不改变既有生成物形态。
+  运行时把 `KmpFunction` / `KmpConstructor` 的实参校验从「个数必须相等」改成「落在允许区间」，
+  错误信息写成 `1..3 arguments`。中间默认不缩短区间（`Formatter` 仍要求三个），命名参数式跳过不建模。
 - 95 注册表按需解析，`by lazy` 真正生效（待完成）。
 - 96 `KmpClasses.of(KClass)` 索引（待完成）。
 - 97 层级语义：`superclasses` → `reflectedSupertypes` + `isSubclassOf` / `allFunctions`（待完成）。
@@ -379,6 +383,11 @@ background `rgb(37, 99, 235)` / color `rgb(255, 255, 255)` / padding `9px 18px` 
 vararg、泛型类只描述、`value class`、`inner`、接口默认实现、注解四类参数、中间默认不可省共 10 项）；
 `:demo:compileKotlinJvm` 通过（KSP 生成物里 `Scoped` 只剩 1 个构造器、`internalThing` 带
 `visibility = KmpVisibility.INTERNAL`、`counter` 可读不可写、`Box<*>` 接收者）。
+
+验证（94）：`:demo:reflectionTest` 24 项全绿。生成物实测：`Person` 构造器 `when (args.size)` 为
+1/2/3 三档、`greet` 为 0/1 两档、`copy` 为 0..3 四档；`constructor.new("Ada")` 得到 `age = 0`、
+`greet()` 得到 `"Hello, Ada!"`、`copy("Grace")` 只改姓名，`new()`（低于下限）仍抛
+`KmpReflectException`；`Formatter.format` 因中间默认仍只有全参一档，传两个参数照样抛错。
 
 ## 明确不做
 

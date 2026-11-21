@@ -114,7 +114,7 @@ val personClass = KmpClasses.of<Person>()
 personClass.properties.map { it.name }              // [name, age, greeting]
 personClass.function("greet", 1)?.isInvokable       // true
 
-val instance = personClass.constructor(3)?.new("Ada", 36, "hidden")
+val instance = personClass.constructor(3)?.new("Ada", 36)    // secret 用默认值
 personClass.function("greet", 1)?.invoke(instance, "Hi")   // "Hi, Ada!"
 ```
 

@@ -9,8 +9,10 @@ package io.github.shijianjs.kmp.reflect
  * @property index position in the parameter list, starting at `0`.
  * @property isVararg whether it is a `vararg` parameter; the value passed through
  * [KmpFunction.invoke] is then the whole array, not a single element.
- * @property hasDefault whether the declaration gives it a default value. Callers still have to pass
- * every parameter: the generated invocation code cannot express "use the default".
+ * @property hasDefault whether the declaration gives it a default value. Generated invokers apply
+ * the default for any trailing run of such parameters, so `invoke` / `new` accept fewer arguments;
+ * a default in the middle of the list still requires every argument after it. Hand-built metadata
+ * that sets this flag has to make its own invoker accept those shorter tails.
  * @property annotations annotations written on the parameter.
  */
 public class KmpParameter(

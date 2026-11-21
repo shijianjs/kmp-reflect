@@ -233,11 +233,11 @@ internal class MetadataWriter {
                 }
                 add("isInvokable = %L,\n", constructor.invokable)
                 if (constructor.invokable) {
-                    add(
-                        "invoker = { args -> %T(%L) },\n",
-                        ownerType(),
-                        callArguments(constructor.parameters),
-                    )
+                    add("invoker = { args -> ")
+                    argumentDispatch(constructor.parameters) { count ->
+                        add("%T(%L)", ownerType(), callArguments(constructor.parameters, count))
+                    }
+                    add(" },\n")
                 }
                 unindent()
                 add("),\n")
@@ -269,18 +269,20 @@ internal class MetadataWriter {
                 when {
                     // A `suspend` function's lambda carries the `suspend` modifier itself, so the
                     // runtime can call it from a coroutine and nowhere else.
-                    function.isSuspend && function.invokable -> add(
-                        "suspendInvoker = suspend { receiver, args -> (receiver as %T).%N(%L) },\n",
-                        ownerType(),
-                        function.name,
-                        callArguments(function.parameters),
-                    )
-                    function.invokable -> add(
-                        "invoker = { receiver, args -> (receiver as %T).%N(%L) },\n",
-                        ownerType(),
-                        function.name,
-                        callArguments(function.parameters),
-                    )
+                    function.isSuspend && function.invokable -> {
+                        add("suspendInvoker = suspend { receiver, args -> ")
+                        argumentDispatch(function.parameters) { count ->
+                            add("(receiver as %T).%N(%L)", ownerType(), function.name, callArguments(function.parameters, count))
+                        }
+                        add(" },\n")
+                    }
+                    function.invokable -> {
+                        add("invoker = { receiver, args -> ")
+                        argumentDispatch(function.parameters) { count ->
+                            add("(receiver as %T).%N(%L)", ownerType(), function.name, callArguments(function.parameters, count))
+                        }
+                        add(" },\n")
+                    }
                 }
                 unindent()
                 add("),\n")
@@ -396,17 +398,51 @@ internal class MetadataWriter {
     }
 
     /** The argument list of an inlined call: each parameter cast back to its declared type. */
-    private fun callArguments(parameters: List<ParameterModel>): CodeBlock = CodeBlock.builder().apply {
-        parameters.forEachIndexed { index, parameter ->
-            if (index > 0) add(", ")
-            val castType = parameter.type.castTypeName() ?: ANY.copy(nullable = true)
-            if (parameter.isVararg) {
-                add("*(args[%L] as %T)", parameter.index, arrayType(castType))
-            } else {
-                add("args[%L] as %T", parameter.index, castType)
+    private fun callArguments(parameters: List<ParameterModel>, count: Int = parameters.size): CodeBlock =
+        CodeBlock.builder().apply {
+            parameters.take(count).forEachIndexed { position, parameter ->
+                if (position > 0) add(", ")
+                val castType = parameter.type.castTypeName() ?: ANY.copy(nullable = true)
+                if (parameter.isVararg) {
+                    add("*(args[%L] as %T)", parameter.index, arrayType(castType))
+                } else {
+                    add("args[%L] as %T", parameter.index, castType)
+                }
             }
+        }.build()
+
+    /**
+     * The argument counts the generated lambda accepts: the full list, plus every shorter tail whose
+     * omitted parameters all declare a default. Those counts are contiguous, so they are written as
+     * one `when (args.size)` instead of one lambda per count.
+     */
+    private fun allowedCounts(parameters: List<ParameterModel>): IntRange {
+        val minimum = parameters.size - parameters.takeLastWhile { it.hasDefault }.size
+        return minimum..parameters.size
+    }
+
+    /** Emits [call] for the full arity, or a `when (args.size)` over the allowed counts. */
+    private inline fun CodeBlock.Builder.argumentDispatch(
+        parameters: List<ParameterModel>,
+        call: CodeBlock.Builder.(count: Int) -> Unit,
+    ) {
+        val counts = allowedCounts(parameters)
+        if (counts.first == counts.last) {
+            call(counts.first)
+            return
         }
-    }.build()
+        add("when (args.size) {\n")
+        indent()
+        counts.forEach { count ->
+            add("%L -> ", count)
+            call(count)
+            add("\n")
+        }
+        // The public entry points already reject other counts, so this branch is unreachable.
+        add("else -> error(%S)\n", "unreachable: the runtime checks the argument count")
+        unindent()
+        add("}")
+    }
 
     private fun arrayType(element: TypeName): TypeName = ClassName("kotlin", "Array").parameterizedBy(element)
 

@@ -45,13 +45,12 @@
 [docs/development/tasks.md](docs/development/tasks.md) 的 S 节。
 
 - 总计：9
-- 已完成：2
+- 已完成：3
 - 明确不做：1
-- 待完成：6
+- 待完成：5
 
 ### 当前待办
 
-- [ ] 94 默认参数：尾部省略调用（`invoke` / `new` 接受 0..n 个尾部参数）
 - [ ] 95 注册表按需解析，生成的 `by lazy` 真正生效
 - [ ] 96 `KmpClasses.of(KClass)` 索引
 - [ ] 97 层级语义：`superclasses` → `reflectedSupertypes`，补 `isSubclassOf` / `allFunctions`
