@@ -22,7 +22,7 @@ internal class ProxyWriter(private val metadataWriter: MetadataWriter) {
         val functions = model.functions.withIndex().filter { (_, function) -> function.isAbstract }
         val proxy = TypeSpec.classBuilder(proxyClassName(model.qualifiedName))
             .addModifiers(KModifier.INTERNAL)
-            .addSuperinterface(model.className)
+            .addSuperinterface(model.ownerType())
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter("kmpClass", KmpNames.KMP_CLASS)

@@ -131,6 +131,8 @@ internal class FunctionModel(
     /** `KmpModifier` constant names. */
     val modifiers: List<String>,
     val annotations: List<AnnotationModel>,
+    /** `KmpVisibility` constant name. */
+    val visibility: String,
     val isSuspend: Boolean,
     val isAbstract: Boolean,
     val isExtension: Boolean,
@@ -145,6 +147,8 @@ internal class PropertyModel(
     val mutable: Boolean,
     val modifiers: List<String>,
     val annotations: List<AnnotationModel>,
+    /** `KmpVisibility` constant name. */
+    val visibility: String,
     val readable: Boolean,
     val writable: Boolean,
 )
@@ -154,6 +158,8 @@ internal class ConstructorModel(
     val parameters: List<ParameterModel>,
     val modifiers: List<String>,
     val annotations: List<AnnotationModel>,
+    /** `KmpVisibility` constant name. */
+    val visibility: String,
     val invokable: Boolean,
 )
 
@@ -194,3 +200,12 @@ internal class ClassModel(
     /** The name of the top-level value this class's metadata is generated into. */
     val valueName: String = metadataValueName(qualifiedName)
 }
+
+/**
+ * The type to write where generated code names the class as a receiver or supertype.
+ *
+ * A generic class cannot be named bare (`Box` is an error), and a cast cannot use projections, so its
+ * own type parameters are written as stars: `Box<*>`.
+ */
+internal fun ClassModel.ownerType(): TypeName =
+    if (typeParameters.isEmpty()) className else className.parameterizedBy(typeParameters.map { STAR })

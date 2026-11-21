@@ -62,6 +62,10 @@ them; they just refuse to run and throw `KmpReflectException` with a reason.
 Arguments are positional, defaults are not applied: every parameter has to be passed. `vararg`
 parameters take an `Array` of the element type.
 
+Members carry their own `visibility` (`PUBLIC` or `INTERNAL`). `private` and `protected` members are
+absent from the metadata rather than described: the generated file is outside the class, so their
+calls could not compile.
+
 ## `suspend` functions
 
 A `suspend` function is described like any other and is callable, but only from inside a coroutine:
@@ -79,8 +83,8 @@ so the caller keeps control of scope and cancellation; the library never starts 
 
 ## Properties
 
-`KmpProperty` carries `name`, `type`, `isMutable`, `modifiers`, `annotations`, `isReadable`,
-`isWritable`, and `get`/`set` lambdas.
+`KmpProperty` carries `name`, `type`, `isMutable`, `modifiers`, `annotations`, `visibility`,
+`isReadable`, `isWritable`, and `get`/`set` lambdas.
 
 - A property whose type mentions a type parameter is not readable.
 - A `var` with a `private set` is readable but not writable — the generated code could not assign it.

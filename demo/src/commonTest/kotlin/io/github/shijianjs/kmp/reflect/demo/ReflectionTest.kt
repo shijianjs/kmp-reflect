@@ -5,12 +5,20 @@ import io.github.shijianjs.kmp.reflect.KmpKind
 import io.github.shijianjs.kmp.reflect.KmpModifier
 import io.github.shijianjs.kmp.reflect.KmpReflectException
 import io.github.shijianjs.kmp.reflect.KmpReflection
+import io.github.shijianjs.kmp.reflect.KmpVisibility
+import io.github.shijianjs.kmp.reflect.demo.model.Box
 import io.github.shijianjs.kmp.reflect.demo.model.Calculator
+import io.github.shijianjs.kmp.reflect.demo.model.Formatter
 import io.github.shijianjs.kmp.reflect.demo.model.Greeter
 import io.github.shijianjs.kmp.reflect.demo.model.Library
 import io.github.shijianjs.kmp.reflect.demo.model.Machine
+import io.github.shijianjs.kmp.reflect.demo.model.Meters
+import io.github.shijianjs.kmp.reflect.demo.model.OuterWork
 import io.github.shijianjs.kmp.reflect.demo.model.Person
+import io.github.shijianjs.kmp.reflect.demo.model.Scoped
 import io.github.shijianjs.kmp.reflect.demo.model.Shape
+import io.github.shijianjs.kmp.reflect.demo.model.Speaker
+import io.github.shijianjs.kmp.reflect.demo.model.Specimen
 import io.github.shijianjs.kmp.reflect.demo.model.Toolbox
 import io.github.shijianjs.kmp.reflect.resource.KmpResources
 import kotlin.coroutines.Continuation
@@ -43,11 +51,14 @@ class ReflectionTest {
 
     @Test
     fun `module registers every reflected class`() {
-        // Person, its companion, Greeter, Shape, Toolbox, Calculator, Machine, Library and Library.Shelf
-        assertEquals(9, KmpClasses.size)
+        // Person, its companion, Greeter, Shape, Toolbox, Calculator, Machine, Library, Library.Shelf,
+        // Scoped, Box, OuterWork, OuterWork.Inner, Meters, Speaker, Formatter and Specimen
+        assertEquals(17, KmpClasses.size)
         assertNotNull(KmpClasses.byNameOrNull("$model.Person"))
         assertNotNull(KmpClasses.byNameOrNull("$model.Person.Companion"))
         assertNotNull(KmpClasses.byNameOrNull("$model.Library.Shelf"))
+        assertNotNull(KmpClasses.byNameOrNull("$model.OuterWork.Inner"))
+        assertNotNull(KmpClasses.byNameOrNull("$model.Meters"))
     }
 
     @Test
@@ -180,6 +191,107 @@ class ReflectionTest {
         assertEquals("library", library.constructor(1)?.new("library")?.let { (it as Library).name })
     }
 
+    @Test
+    fun `protected and private members never reach the metadata`() {
+        val scoped = KmpClasses.of(Scoped::class)
+        // A generated file is outside the class: a protected or private call there would not compile,
+        // so such members are dropped instead of described.
+        assertNull(scoped.function("hidden", 0))
+        assertNull(scoped.function("secret", 0))
+        // The protected secondary constructor is gone, the public primary one stays.
+        assertEquals(1, scoped.constructors.size)
+        assertEquals("x", (scoped.constructor(1)?.new("x") as Scoped).label)
+        // A public property with a protected setter is readable but not writable.
+        val counter = assertNotNull(scoped.property("counter"))
+        assertTrue(counter.isReadable)
+        assertFalse(counter.isWritable)
+    }
+
+    @Test
+    fun `internal members keep their visibility`() {
+        val scoped = KmpClasses.of(Scoped::class)
+        val internalThing = assertNotNull(scoped.function("internalThing", 0))
+        assertEquals(KmpVisibility.INTERNAL, internalThing.visibility)
+        assertEquals(KmpVisibility.PUBLIC, assertNotNull(scoped.function("shown", 0)).visibility)
+        assertEquals(KmpVisibility.PUBLIC, assertNotNull(scoped.constructor(1)).visibility)
+        assertEquals("internal", internalThing.invoke(Scoped("x")))
+    }
+
+    @Test
+    fun `vararg parameters take one array argument`() {
+        val join = assertNotNull(KmpClasses.of(Scoped::class).function("join", 1))
+        assertTrue(join.parameters.single().isVararg)
+        assertEquals("a-b", join.invoke(Scoped("x"), arrayOf("a", "b")))
+    }
+
+    @Test
+    fun `a generic class is described and its closed members stay invokable`() {
+        val box = KmpClasses.of(Box::class)
+        assertEquals(listOf("T"), box.typeParameters.map { it.name })
+        // A cast cannot name `T`, so the members that mention it are described only.
+        assertFalse(assertNotNull(box.constructor(3)).isInvokable)
+        assertFalse(assertNotNull(box.function("swap", 1)).isInvokable)
+        assertFalse(assertNotNull(box.property("item")).isReadable)
+        assertFalse(assertNotNull(box.property("tags")).isReadable)
+        // Members with a closed signature are still callable: the receiver cast is `Box<*>`.
+        val instance = Box("x", listOf("a", "b"), "label")
+        assertEquals(2, box.function("tagCount", 0)?.invoke(instance))
+        // The type alias is recorded expanded, not by its own name.
+        assertEquals("kotlin.String", assertNotNull(box.property("label")).type.qualifiedName)
+        assertEquals("label", box.property("label")?.get(instance))
+    }
+
+    @Test
+    fun `a value class can be rebuilt and called through metadata`() {
+        val meters = KmpClasses.of(Meters::class)
+        assertTrue(KmpModifier.VALUE in meters.modifiers)
+        val instance = assertNotNull(meters.constructor(1)?.new(3)) as Meters
+        assertEquals(3, instance.value)
+        assertEquals(6, meters.function("doubled", 0)?.invoke(instance))
+    }
+
+    @Test
+    fun `an inner class needs an outer instance`() {
+        val inner = KmpClasses.of(OuterWork.Inner::class)
+        assertTrue(KmpModifier.INNER in inner.modifiers)
+        assertFalse(assertNotNull(inner.constructor(0)).isInvokable)
+        // The call itself still works on an instance the caller obtained the Kotlin way.
+        val outer = OuterWork()
+        assertEquals("pong", inner.function("ping", 0)?.invoke(outer.Inner()))
+    }
+
+    @Test
+    fun `an interface default member is callable and the interface is proxyable`() {
+        val speaker = KmpClasses.of(Speaker::class)
+        assertTrue(speaker.isInterface)
+        assertTrue(speaker.isProxyable)
+        val implementation = object : Speaker {
+            override fun speak(): String = "hi"
+        }
+        assertEquals("hi", speaker.function("speak", 0)?.invoke(implementation))
+        assertEquals("hihi", speaker.function("twice", 0)?.invoke(implementation))
+    }
+
+    @Test
+    fun `annotation arguments cover class enum nested and array values`() {
+        val specimen = KmpClasses.of(Specimen::class)
+        val spec = assertNotNull(specimen.annotation("$model.KmpSpec"))
+        assertEquals(Person::class, spec.kclass("target"))
+        assertEquals(Shape.CIRCLE, spec.get("shape"))
+        assertTrue(spec.get("labels") is List<*>)
+        assertEquals(listOf("x", "y"), spec.get("labels"))
+        val nested = assertNotNull(spec.annotation("nested"))
+        assertEquals("$model.KmpNested", nested.qualifiedName)
+        assertEquals(true, nested.boolean("flag"))
+    }
+
+    @Test
+    fun `a default in the middle of the list keeps every argument required`() {
+        val format = assertNotNull(KmpClasses.of(Formatter::class).function("format", 3))
+        // `mode` has a default, but the last parameter does not, so no tail can be omitted.
+        assertFailsWith<KmpReflectException> { format.invoke(Formatter(), 1, "x") }
+        assertEquals("1-!", format.invoke(Formatter(), 1, "-", "!"))
+    }
     @Test
     fun `inlined resources carry path mime type and bytes`() {
         assertEquals(3, KmpResources.size)

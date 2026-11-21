@@ -18,8 +18,11 @@ package io.github.shijianjs.kmp.reflect
 @Retention(AnnotationRetention.BINARY)
 public annotation class KmpReflect(
     /**
-     * Whether members compiled as `internal` (and `protected`) are reflected too. Set to `false` to
-     * keep only `public` members, which is also what unannotated classes get.
+     * Whether members compiled as `internal` are reflected too. Set to `false` to keep only
+     * `public` members.
+     *
+     * `private` and `protected` members are never reflected: the generated metadata is a top-level
+     * file outside the class, so a call to either would not compile.
      */
     val includeNonPublic: Boolean = true,
 )

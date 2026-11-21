@@ -150,9 +150,9 @@ public enum class KmpVariance {
     /** No projection: `List<String>`. */
     INVARIANT,
 
-    /** `out` projection: `List<out String>`. */
+    /** `in` projection: `Comparable<in String>`. */
     IN,
 
-    /** `in` projection: `Comparable<in String>`. */
+    /** `out` projection: `List<out String>`. */
     OUT,
 }

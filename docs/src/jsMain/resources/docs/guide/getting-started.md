@@ -94,9 +94,11 @@ object Toolbox : KmpReflectable   // marker interface, no options
 ```
 
 Both are honoured only for `public` declarations (and, with the default `kmp.reflect.visibility = all`,
-also `internal` and `protected`) in the current module. A nested class is reflected only when it is
-opted in itself; a companion object is always pulled in with its class. `@KmpReflectIgnore` removes a
-single member — a function or property — from an otherwise reflected class.
+also `internal`) in the current module. `private` and `protected` members are never reflected: the
+generated metadata is a top-level file outside the class, so a call to either there would not compile.
+A nested class is reflected only when it is opted in itself; a companion object is always pulled in
+with its class. `@KmpReflectIgnore` removes a single member — a function or property — from an
+otherwise reflected class.
 
 ## Registering the generated module
 

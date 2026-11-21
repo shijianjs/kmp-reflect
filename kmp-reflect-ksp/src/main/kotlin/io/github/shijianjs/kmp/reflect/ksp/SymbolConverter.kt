@@ -153,8 +153,13 @@ internal class SymbolConverter(
             return null
         }
         if (qualifiedName in ignoredDeclarations) return null
-        if (Modifier.PRIVATE in declaration.modifiers) {
-            logger.warn("Skipping '$qualifiedName': private declarations cannot be referenced from generated code.", declaration)
+        // Generated metadata is a top-level file: neither a `private` nor a `protected` declaration
+        // can be referenced from there, so reflecting one would only break the consumer's build.
+        if (Modifier.PRIVATE in declaration.modifiers || Modifier.PROTECTED in declaration.modifiers) {
+            logger.warn(
+                "Skipping '$qualifiedName': private and protected declarations cannot be referenced from generated code.",
+                declaration,
+            )
             return null
         }
         if (Modifier.EXPECT in declaration.modifiers) {
@@ -190,7 +195,7 @@ internal class SymbolConverter(
         }
         val isInterface = declaration.classKind == ClassKind.INTERFACE
 
-        val constructors = constructorModels(declaration, declarations)
+        val constructors = constructorModels(declaration, declarations, membersVisible)
         val functions = declarations
             .filterIsInstance<KSFunctionDeclaration>()
             .filter { it.simpleName.asString() != CONSTRUCTOR_NAME }
@@ -247,8 +252,16 @@ internal class SymbolConverter(
         )
     }
 
+    /**
+     * Whether a declared member can appear in generated code at all.
+     *
+     * `private` and `protected` members cannot: the generated metadata is a top-level file, outside
+     * the class, so a call to either would not compile. They are dropped instead of described, which
+     * is also what `kmp.reflect.visibility=public` narrows `internal` members to.
+     */
     private fun memberVisible(declaration: KSDeclaration, includeNonPublic: Boolean): Boolean {
         if (Modifier.PRIVATE in declaration.modifiers) return false
+        if (Modifier.PROTECTED in declaration.modifiers) return false
         if (declaration.qualifiedName?.asString() in ignoredDeclarations) return false
         if (!includeNonPublic && visibilityOf(declaration) != Visibility.PUBLIC) return false
         return true
@@ -257,6 +270,7 @@ internal class SymbolConverter(
     private fun constructorModels(
         declaration: KSClassDeclaration,
         declarations: List<KSDeclaration>,
+        includeNonPublic: Boolean,
     ): List<ConstructorModel> {
         // Objects, enums and annotation classes cannot be constructed from outside.
         if (declaration.classKind != ClassKind.CLASS && declaration.classKind != ClassKind.INTERFACE) {
@@ -272,7 +286,7 @@ internal class SymbolConverter(
             (fromDeclarations + listOfNotNull(primary)).distinctBy { constructorSignature(it) }
         }
         return candidates
-            .filter { memberVisible(it, true) }
+            .filter { memberVisible(it, includeNonPublic) }
             .map { constructor ->
                 val parameters = parameterModels(constructor)
                 val invokable = Modifier.INNER !in declaration.modifiers &&
@@ -281,6 +295,7 @@ internal class SymbolConverter(
                     parameters = parameters,
                     modifiers = modifierNames(constructor),
                     annotations = annotationsOf(constructor),
+                    visibility = visibilityName(constructor),
                     invokable = invokable,
                 )
             }
@@ -306,6 +321,7 @@ internal class SymbolConverter(
             typeParameters = typeParameters,
             modifiers = modifierNames(declaration),
             annotations = annotationsOf(declaration),
+            visibility = visibilityName(declaration),
             isSuspend = isSuspend,
             isAbstract = declaration.isAbstract,
             isExtension = declaration.extensionReceiver != null,
@@ -315,11 +331,16 @@ internal class SymbolConverter(
 
     private fun propertyModel(declaration: KSPropertyDeclaration): PropertyModel {
         val type = declaration.type.resolve().let { typeModel(it) }
-        val readable = !type.usesTypeParameter
-        // A `var` with a private setter is writable from Kotlin but not from generated code in
-        // another file, so the setter's own visibility decides.
-        val setterAccessible = declaration.setter?.let { setter ->
-            Modifier.PRIVATE !in setter.modifiers
+        // A property is reachable only through its accessors, and the generated file is outside the
+        // class: an accessor that is `private` or `protected` there is as good as absent.
+        val getterAccessible = declaration.getter?.let { accessor ->
+            Modifier.PRIVATE !in accessor.modifiers && Modifier.PROTECTED !in accessor.modifiers
+        } ?: true
+        val readable = !type.usesTypeParameter && getterAccessible
+        // A `var` with a private or protected setter is writable from Kotlin but not from generated
+        // code in another file, so the accessor's own visibility decides.
+        val setterAccessible = declaration.setter?.let { accessor ->
+            Modifier.PRIVATE !in accessor.modifiers && Modifier.PROTECTED !in accessor.modifiers
         } ?: true
         val writable = declaration.isMutable && readable && setterAccessible
         return PropertyModel(
@@ -328,6 +349,7 @@ internal class SymbolConverter(
             mutable = declaration.isMutable,
             modifiers = modifierNames(declaration),
             annotations = annotationsOf(declaration),
+            visibility = visibilityName(declaration),
             readable = readable,
             writable = writable,
         )

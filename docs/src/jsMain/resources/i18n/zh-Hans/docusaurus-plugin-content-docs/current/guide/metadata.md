@@ -59,6 +59,9 @@ greet.invokeAs<String>(person, "Hello")
 
 参数按位置传，默认值不会生效：每个参数都必须给。`vararg` 参数传入元素类型的 `Array`。
 
+成员自带 `visibility`（`PUBLIC` 或 `INTERNAL`）。`private` / `protected` 成员不会出现在元数据里，
+也不是“只描述不调用”：生成文件在类外，调用它们无法编译。
+
 ## `suspend` 函数
 
 `suspend` 函数和普通函数一样被描述，也能调用，但只能在协程里调：
@@ -75,8 +78,8 @@ slowAdd.invokeSuspend(calculator, 3, 4)    // 在 `suspend` 上下文中得到 7
 
 ## 属性
 
-`KmpProperty` 带有 `name`、`type`、`isMutable`、`modifiers`、`annotations`、`isReadable`、
-`isWritable` 以及 `get`/`set` lambda。
+`KmpProperty` 带有 `name`、`type`、`isMutable`、`modifiers`、`annotations`、`visibility`、
+`isReadable`、`isWritable` 以及 `get`/`set` lambda。
 
 - 类型含类型参数的属性不可读。
 - `var` 但 setter 为 `private` 时可读不可写 —— 生成的代码无法赋值。

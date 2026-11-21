@@ -30,6 +30,8 @@ public typealias KmpSuspendFunctionInvoker = suspend (receiver: Any?, arguments:
  * @property typeParameters type parameters of the function itself.
  * @property modifiers declaration modifiers.
  * @property annotations annotations written on the function.
+ * @property visibility declared visibility. `PRIVATE` and `PROTECTED` never appear: generated code
+ * lives outside the class and could not call them.
  * @property isInvokable `false` when the processor could not generate an invocation lambda for
  * [invoke] — a `suspend` function (use [invokeSuspend] instead), or one whose signature mentions a
  * type parameter. Both entry points then throw.
@@ -41,6 +43,7 @@ public class KmpFunction(
     public val typeParameters: List<KmpTypeParameter> = emptyList(),
     public val modifiers: Set<KmpModifier> = emptySet(),
     public val annotations: List<KmpAnnotation> = emptyList(),
+    public val visibility: KmpVisibility = KmpVisibility.PUBLIC,
     public val isInvokable: Boolean = true,
     private val invoker: KmpFunctionInvoker? = null,
     private val suspendInvoker: KmpSuspendFunctionInvoker? = null,
@@ -147,6 +150,8 @@ public class KmpConstructor(
     public val modifiers: Set<KmpModifier> = emptySet(),
     /** Annotations written on the constructor. */
     public val annotations: List<KmpAnnotation> = emptyList(),
+    /** Declared visibility; `PRIVATE` and `PROTECTED` constructors are never reflected. */
+    public val visibility: KmpVisibility = KmpVisibility.PUBLIC,
     /** `false` when no invocation lambda could be generated. */
     public val isInvokable: Boolean = true,
     private val invoker: ((arguments: List<Any?>) -> Any?)? = null,
@@ -167,7 +172,8 @@ public class KmpConstructor(
         }
         val invoker = invoker
             ?: throw KmpReflectException(
-                "Constructor is not invokable: its signature mentions a type parameter.",
+                "Constructor is not invokable: an inner class needs an outer instance, or its " +
+                    "signature mentions a type parameter.",
             )
         return invoker(arguments.toList())
     }

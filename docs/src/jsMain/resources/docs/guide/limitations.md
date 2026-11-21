@@ -29,6 +29,9 @@ flowchart TD
 - **No generic invocation.** A function or constructor whose signature mentions a type parameter
   cannot be called through `Any?` arguments, because the generated call site has no type to cast to.
   It is described instead.
+- **`private` and `protected` members are never reflected.** The generated metadata is a top-level file
+  outside the class, so a call to either would not compile. They are dropped instead of described —
+  `internal` members stay, because that file is in the same module.
 - **No extension members.** Extension functions and properties are not reflected; they are not members
   of the class in the bytecode sense either.
 - **No defaults at call time.** Default arguments are not applied by `invoke`: pass every parameter.

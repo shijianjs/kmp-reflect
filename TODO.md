@@ -38,3 +38,28 @@
   链接它的宿主上构建；Wasm 目标不声明链接产物，`build` 不需要 binaryen。
 - 本地依赖可走国内镜像，仓库与 CI 只用官方源。
 - 提交信息用中文简述；每个阶段完成后提交一次。
+
+## kmp-reflect v0.2：审查修正
+
+2026-11-22 对代码审查结论的复核与补强，逐条明细在
+[docs/development/tasks.md](docs/development/tasks.md) 的 S 节。
+
+- 总计：9
+- 已完成：2
+- 明确不做：1
+- 待完成：6
+
+### 当前待办
+
+- [ ] 94 默认参数：尾部省略调用（`invoke` / `new` 接受 0..n 个尾部参数）
+- [ ] 95 注册表按需解析，生成的 `by lazy` 真正生效
+- [ ] 96 `KmpClasses.of(KClass)` 索引
+- [ ] 97 层级语义：`superclasses` → `reflectedSupertypes`，补 `isSubclassOf` / `allFunctions`
+- [ ] 98 文档与文案对齐（variance KDoc、注解默认值、inner 报错、`isInstance` 语义）
+- [ ] 99 边界覆盖用例在四个后端跑通（用例已落地，待 `:demo:allTests` 验证）
+
+### 注意事项
+
+- `private` / `protected` 成员与构造器不进元数据：生成文件在类外，调用它们无法编译。
+- 泛型类的接收者一律写 `Box<*>`（`ClassModel.ownerType()`），不要再退化成裸 `Box`。
+- 数据类合成成员保留现状（`copy` / `componentN` 照常反射），过滤选项明确不做，理由见 tasks.md。

@@ -89,7 +89,13 @@ public class KmpClass(
     public val isProxyable: Boolean
         get() = proxyFactory != null
 
-    /** Whether [value] is an instance of this class. */
+    /**
+     * Whether [value] is an instance of this class.
+     *
+     * Answers `false` when no runtime class was recorded (hand-built metadata). This is stricter than
+     * [KmpTypeRef.isInstance], which accepts what it cannot resolve: "is this value an instance of
+     * *this* class" is an identity question, so "cannot tell" is not "yes".
+     */
     public fun isInstance(value: Any?): Boolean = runtime?.isInstance(value) ?: false
 
     /**

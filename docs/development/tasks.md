@@ -17,6 +17,17 @@
 | 明确不做 | 1 |
 | 待完成 | 0 |
 
+以上是 v0.1 的口径。2026-11-22 追加的 v0.2 审查修正批次（S 节）单独统计：
+
+| 状态 | 数量 |
+|---|---:|
+| 总计 | 9 |
+| 已完成 | 2 |
+| 明确不做 | 1 |
+| 待完成 | 6 |
+
+核对日期：2026-11-22。
+
 已完成事项不再逐条列出；签名、验证依据见下方各节末尾的「验证」注记。
 共有三批：A–I 是 v0.1 的库本体与站点，J 是 2026-11-16 追加的平台扩展（KSP 2 已支持 KMP 的 Native 与
 Wasm，原先「只做 JVM + JS」的边界因此作废），其中 75–78 是同一轮之后的逐次推进（suspend、三宿主 CI、
@@ -342,11 +353,39 @@ background `rgb(37, 99, 235)` / color `rgb(255, 255, 255)` / padding `9px 18px` 
 `[style]` 只有 `BODY`、页面 shadow 2 份、两个 `<vaadin-button>` background `rgb(37, 99, 235)`、状态行
 `Clicks: 0`），切语言后就地变成「1. 被封装出来的元素 / 点击次数: 0 / EN」，无 console error、无失败请求。
 
+### S. v0.2 审查修正（9，2026-11-22 追加）
+
+来源：2026-11-22 对项目代码的一轮审查（另一 AI 的评价 + 逐条核对源码）。核对结论：确认真问题 6 项，
+已覆盖 1 项（`KmpTypeRef` 早已保留 `arguments` / `variance` / star / type parameter，运行时只用于
+`isInstance` 且文档写明擦除），误判 1 项（`by lazy` 的延迟被注册表的全量求值抵消，见第 95 项）。
+
+- 92 **`private` / `protected` 成员与构造器不进元数据**：`SymbolConverter.memberVisible` 同时排除两者
+  （原实现只排 `private`，而 `includeNonPublic` 默认 `true` 会把 protected 成员写进生成代码，
+  顶层文件里调用 protected 成员会直接编译失败）；属性可读/可写改按 getter / setter 自身可见性判定；
+  protected 嵌套类同样跳过。顺带修掉泛型类的接收者写法：新增 `ClassModel.ownerType()`，生成
+  `(receiver as Box<*>)`（原来写成 `(receiver as Box)`，泛型类一被反射就编译失败，此前没有泛型类用例）。
+- 93 **成员可见性进元数据**：`KmpFunction` / `KmpProperty` / `KmpConstructor` 增加 `visibility`；
+  生成代码只在非 `PUBLIC` 时写该参数。
+- 94 默认参数：尾部省略调用（待完成）。
+- 95 注册表按需解析，`by lazy` 真正生效（待完成）。
+- 96 `KmpClasses.of(KClass)` 索引（待完成）。
+- 97 层级语义：`superclasses` → `reflectedSupertypes` + `isSubclassOf` / `allFunctions`（待完成）。
+- 98 文档与文案对齐（待完成）。
+- 99 边界覆盖用例：`Scoped` / `Box` / `OuterWork`(+`Inner`) / `Meters` / `Speaker` / `Formatter` /
+  `Specimen`（待完成）。
+- 100 数据类合成成员的过滤选项（明确不做，理由见「明确不做」）。
+
+验证（92/93）：`:demo:reflectionTest` 23 项全绿（新增 protected/private 缺席、internal 可见性、
+vararg、泛型类只描述、`value class`、`inner`、接口默认实现、注解四类参数、中间默认不可省共 10 项）；
+`:demo:compileKotlinJvm` 通过（KSP 生成物里 `Scoped` 只剩 1 个构造器、`internalThing` 带
+`visibility = KmpVisibility.INTERNAL`、`counter` 可读不可写、`Box<*>` 接收者）。
+
 ## 明确不做
 
 | 名称 | 排除理由 |
 |---|---|
 | 37 多轮（multi-round）处理 | 处理器只处理源码：生成的元数据/代理/注册表里没有任何需要再被注解处理的东西，`deferred` 无实际用途。若将来引入“生成的类也要参与反射”的能力再纳入。 |
+| 100 数据类合成成员（`copy` / `componentN`）的过滤选项 | KSP 不暴露 “synthetic” 标志，按名字推断会在普通类上误判；保留现状（它们照常参与元数据，`copy` 因此也能带默认参数调用），不对称性记入 limitations。 |
 
 ## 备注
 

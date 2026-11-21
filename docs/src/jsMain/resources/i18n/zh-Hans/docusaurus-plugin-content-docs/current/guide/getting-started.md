@@ -88,7 +88,8 @@ class Person(val name: String)
 object Toolbox : KmpReflectable   // 标记接口，没有选项
 ```
 
-只对当前模块里的 `public` 声明生效（默认的 `kmp.reflect.visibility = all` 也包含 `internal` / `protected`）。
+只对当前模块里的 `public` 声明生效（默认的 `kmp.reflect.visibility = all` 也包含 `internal`）。
+`private` 与 `protected` 成员永远不进元数据：生成的元数据是类外的顶层文件，在里面调用它们无法编译。
 嵌套类必须自己声明参与；伴生对象会随所属类一起被反射。`@KmpReflectIgnore` 可以把单个函数或属性从
 已反射的类里去掉。
 

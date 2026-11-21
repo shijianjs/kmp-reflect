@@ -11,6 +11,7 @@ package io.github.shijianjs.kmp.reflect
  * @property isMutable whether the declaration is a `var`.
  * @property modifiers declaration modifiers.
  * @property annotations annotations written on the property.
+ * @property visibility declared visibility. `PRIVATE` and `PROTECTED` never appear.
  * @property isReadable `false` when no getter lambda could be generated.
  * @property isWritable `false` for a `val`, and for a `var` whose setter could not be generated.
  */
@@ -20,6 +21,7 @@ public class KmpProperty(
     public val isMutable: Boolean = false,
     public val modifiers: Set<KmpModifier> = emptySet(),
     public val annotations: List<KmpAnnotation> = emptyList(),
+    public val visibility: KmpVisibility = KmpVisibility.PUBLIC,
     public val isReadable: Boolean = true,
     public val isWritable: Boolean = false,
     private val getter: ((receiver: Any?) -> Any?)? = null,

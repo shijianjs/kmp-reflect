@@ -22,7 +22,11 @@ import kotlin.reflect.KClass
 public class KmpAnnotation(
     /** The annotation class this occurrence refers to. */
     public val type: KmpTypeRef,
-    /** Arguments by name, in declaration order; only arguments that were written are present. */
+    /**
+     * Arguments by name, in declaration order. Values the annotation class declares defaults for
+     * are present even when the source did not write them, so `arguments` mirrors what the
+     * annotation would answer at runtime rather than the literal text.
+     */
     public val arguments: Map<String, Any?> = emptyMap(),
 ) {
     /** The fully qualified name of the annotation class. */

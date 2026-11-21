@@ -14,7 +14,7 @@ internal data class RegistryTarget(val packageName: String, val objectName: Stri
  * | `kmp.reflect.registry` | `package:ObjectName`; enables the generated `KmpReflectModule` and resource inlining |
  * | `kmp.reflect.module` | display name recorded in the module object |
  * | `kmp.reflect.resources` | resource directories, separated by `,`, `;` or the platform path separator |
- * | `kmp.reflect.visibility` | `all` (default) reflects `internal`/`protected` members, `public` reflects only `public` |
+ * | `kmp.reflect.visibility` | `all` (default) reflects `internal` members, `public` reflects only `public` ones |
  */
 internal class Options(
     val registry: RegistryTarget?,

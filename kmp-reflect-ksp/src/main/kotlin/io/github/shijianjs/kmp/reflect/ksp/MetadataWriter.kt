@@ -228,6 +228,9 @@ internal class MetadataWriter {
                 add("parameters = ").parameterList(constructor.parameters).add(",\n")
                 add("modifiers = ").modifierSet(constructor.modifiers).add(",\n")
                 add("annotations = ").annotationList(constructor.annotations).add(",\n")
+                if (constructor.visibility != "PUBLIC") {
+                    add("visibility = %T.%L,\n", KmpNames.KMP_VISIBILITY, constructor.visibility)
+                }
                 add("isInvokable = %L,\n", constructor.invokable)
                 if (constructor.invokable) {
                     add(
@@ -259,6 +262,9 @@ internal class MetadataWriter {
                 add("typeParameters = ").typeParameterList(function.typeParameters).add(",\n")
                 add("modifiers = ").modifierSet(function.modifiers).add(",\n")
                 add("annotations = ").annotationList(function.annotations).add(",\n")
+                if (function.visibility != "PUBLIC") {
+                    add("visibility = %T.%L,\n", KmpNames.KMP_VISIBILITY, function.visibility)
+                }
                 add("isInvokable = %L,\n", function.invokable)
                 when {
                     // A `suspend` function's lambda carries the `suspend` modifier itself, so the
@@ -298,6 +304,9 @@ internal class MetadataWriter {
                 add("isMutable = %L,\n", property.mutable)
                 add("modifiers = ").modifierSet(property.modifiers).add(",\n")
                 add("annotations = ").annotationList(property.annotations).add(",\n")
+                if (property.visibility != "PUBLIC") {
+                    add("visibility = %T.%L,\n", KmpNames.KMP_VISIBILITY, property.visibility)
+                }
                 add("isReadable = %L,\n", property.readable)
                 add("isWritable = %L,\n", property.writable)
                 if (property.readable) {
@@ -401,5 +410,5 @@ internal class MetadataWriter {
 
     private fun arrayType(element: TypeName): TypeName = ClassName("kotlin", "Array").parameterizedBy(element)
 
-    private fun ownerType(): TypeName = requireNotNull(owner) { "A class model must be set before writing members." }.className
+    private fun ownerType(): TypeName = requireNotNull(owner) { "A class model must be set before writing members." }.ownerType()
 }
