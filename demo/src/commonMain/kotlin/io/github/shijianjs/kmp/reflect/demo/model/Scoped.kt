@@ -14,6 +14,9 @@ public open class Scoped public constructor(public val label: String) {
     /** A protected secondary constructor: not reflected, the generated file could not call it. */
     protected constructor(label: String, order: Int) : this(label + order)
 
+    /** A public `vararg` constructor: its invoker goes through a file-local bridge (see limitations). */
+    public constructor(label: String, vararg tags: String) : this(label + "#" + tags.size)
+
     @Suppress("unused")
     private val cache: String = label
 

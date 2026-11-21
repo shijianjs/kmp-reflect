@@ -54,7 +54,10 @@ internal class SymbolConverter(
         }
         val classDeclaration = declaration as? KSClassDeclaration
         val qualifiedName = declaration.qualifiedName?.asString() ?: declaration.simpleName.asString()
-        val className = classDeclaration?.toClassName()
+        // `kotlin.jvm.*` holds compiler annotations (`JvmInline`, `JvmName`, …) that are optional
+        // expectations on Kotlin/JS, Wasm and Native. `JvmInline::class` there is not a real class
+        // constant, and emitting it makes the whole generated initializer fail to link on Native.
+        val className = classDeclaration?.toClassName()?.takeUnless { qualifiedName.startsWith("kotlin.jvm.") }
         val arguments = type.arguments.map { argument ->
             val reference = argument.type
             if (argument.variance == Variance.STAR || reference == null) {

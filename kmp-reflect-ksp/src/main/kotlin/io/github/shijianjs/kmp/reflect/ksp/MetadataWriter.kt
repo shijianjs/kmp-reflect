@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -21,12 +22,20 @@ import com.squareup.kotlinpoet.TypeName
 internal class MetadataWriter {
     private var owner: ClassModel? = null
 
+    private fun constructorBridgeName(model: ClassModel, index: Int): String =
+        "kmpCall_${model.valueName}_constructor$index"
+
+    private fun functionBridgeName(model: ClassModel, index: Int): String =
+        "kmpCall_${model.valueName}_function$index"
+
     /** The file carrying [model]'s metadata, written into [ClassModel.packageName]. */
     fun file(model: ClassModel): FileSpec {
         owner = model
         try {
-            return FileSpec.builder(model.packageName, metadataFileName(model.qualifiedName))
+            val builder = FileSpec.builder(model.packageName, metadataFileName(model.qualifiedName))
                 .addAnnotation(fileSuppress())
+            addVarargBridges(builder, model)
+            return builder
                 .addProperty(
                     PropertySpec.builder(model.valueName, KmpNames.KMP_CLASS)
                         .addModifiers(KModifier.INTERNAL)
@@ -47,6 +56,80 @@ internal class MetadataWriter {
             owner = null
         }
     }
+
+    /**
+     * Writes one file-private bridge per invokable member that takes a `vararg` parameter.
+     *
+     * The spread has to sit in a normal function body over a plain parameter, not in the invoker
+     * lambda: the Kotlin/Wasm backend fails its own lowering when a spread is applied to a cast
+     * expression inside a function value ("Argument CLASS Any must be an array"), which breaks the
+     * whole test executable. The bridge therefore receives the array already cast, and the invoker
+     * only passes it through.
+     */
+    private fun addVarargBridges(builder: FileSpec.Builder, model: ClassModel) {
+        model.constructors.forEachIndexed { index, constructor ->
+            if (!constructor.invokable || constructor.parameters.none { it.isVararg }) return@forEachIndexed
+            builder.addFunction(
+                bridge(
+                    name = constructorBridgeName(model, index),
+                    receiverType = null,
+                    parameters = constructor.parameters,
+                    suspend = false,
+                ) { CodeBlock.of("%T(%L)", ownerType(), bridgeArguments(constructor.parameters)) },
+            )
+        }
+        model.functions.forEachIndexed { index, function ->
+            if (!function.invokable || function.parameters.none { it.isVararg }) return@forEachIndexed
+            builder.addFunction(
+                bridge(
+                    name = functionBridgeName(model, index),
+                    receiverType = ownerType(),
+                    parameters = function.parameters,
+                    suspend = function.isSuspend,
+                ) {
+                    CodeBlock.of("target.%N(%L)", function.name, bridgeArguments(function.parameters))
+                },
+            )
+        }
+    }
+
+    private fun bridge(
+        name: String,
+        receiverType: TypeName?,
+        parameters: List<ParameterModel>,
+        suspend: Boolean,
+        call: () -> CodeBlock,
+    ): FunSpec {
+        val builder = FunSpec.builder(name)
+            .addModifiers(KModifier.PRIVATE)
+        if (suspend) builder.addModifiers(KModifier.SUSPEND)
+        if (receiverType != null) builder.addParameter("target", receiverType)
+        parameters.forEachIndexed { index, parameter ->
+            val element = parameter.type.castTypeName() ?: ANY.copy(nullable = true)
+            builder.addParameter("arg$index", if (parameter.isVararg) arrayType(element) else element)
+        }
+        return builder
+            .returns(ANY.copy(nullable = true))
+            .addCode("return %L\n", call())
+            .build()
+    }
+
+    /** The bridge call's arguments: one named parameter per member parameter, spread where vararg. */
+    private fun bridgeArguments(parameters: List<ParameterModel>): CodeBlock = CodeBlock.builder().apply {
+        parameters.forEachIndexed { index, parameter ->
+            if (index > 0) add(", ")
+            if (parameter.isVararg) add("*arg$index") else add("arg$index")
+        }
+    }.build()
+
+    /** The invoker's arguments for a bridge: each one cast back to its declared type, no spread. */
+    private fun castArguments(parameters: List<ParameterModel>): CodeBlock = CodeBlock.builder().apply {
+        parameters.forEachIndexed { index, parameter ->
+            if (index > 0) add(", ")
+            val castType = parameter.type.castTypeName() ?: ANY.copy(nullable = true)
+            add("args[%L] as %T", parameter.index, if (parameter.isVararg) arrayType(castType) else castType)
+        }
+    }.build()
 
     /** An `@file:Suppress` that keeps the generated casts and unused holder quiet. */
     fun fileSuppress(): AnnotationSpec = AnnotationSpec.builder(KmpNames.SUPPRESS)
@@ -222,7 +305,7 @@ internal class MetadataWriter {
         } else {
             add("listOf(\n")
             indent()
-            constructors.forEach { constructor ->
+            constructors.forEachIndexed { index, constructor ->
                 add("%T(\n", KmpNames.KMP_CONSTRUCTOR)
                 indent()
                 add("parameters = ").parameterList(constructor.parameters).add(",\n")
@@ -233,11 +316,20 @@ internal class MetadataWriter {
                 }
                 add("isInvokable = %L,\n", constructor.invokable)
                 if (constructor.invokable) {
-                    add("invoker = { args -> ")
-                    argumentDispatch(constructor.parameters) { count ->
-                        add("%T(%L)", ownerType(), callArguments(constructor.parameters, count))
+                    if (constructor.parameters.any { it.isVararg }) {
+                        // The spread lives in the bridge; see [addVarargBridges].
+                        add(
+                            "invoker = { args -> %N(%L) },\n",
+                            constructorBridgeName(requireNotNull(owner), index),
+                            castArguments(constructor.parameters),
+                        )
+                    } else {
+                        add("invoker = { args -> ")
+                        argumentDispatch(constructor.parameters) { count ->
+                            add("%T(%L)", ownerType(), callArguments(constructor.parameters, count))
+                        }
+                        add(" },\n")
                     }
-                    add(" },\n")
                 }
                 unindent()
                 add("),\n")
@@ -253,7 +345,7 @@ internal class MetadataWriter {
         } else {
             add("listOf(\n")
             indent()
-            functions.forEach { function ->
+            functions.forEachIndexed { index, function ->
                 add("%T(\n", KmpNames.KMP_FUNCTION)
                 indent()
                 add("name = %S,\n", function.name)
@@ -266,22 +358,51 @@ internal class MetadataWriter {
                     add("visibility = %T.%L,\n", KmpNames.KMP_VISIBILITY, function.visibility)
                 }
                 add("isInvokable = %L,\n", function.invokable)
+                val vararg = function.parameters.any { it.isVararg }
                 when {
                     // A `suspend` function's lambda carries the `suspend` modifier itself, so the
                     // runtime can call it from a coroutine and nowhere else.
                     function.isSuspend && function.invokable -> {
-                        add("suspendInvoker = suspend { receiver, args -> ")
-                        argumentDispatch(function.parameters) { count ->
-                            add("(receiver as %T).%N(%L)", ownerType(), function.name, callArguments(function.parameters, count))
+                        if (vararg) {
+                            add(
+                                "suspendInvoker = suspend { receiver, args -> %N(receiver as %T, %L) },\n",
+                                functionBridgeName(requireNotNull(owner), index),
+                                ownerType(),
+                                castArguments(function.parameters),
+                            )
+                        } else {
+                            add("suspendInvoker = suspend { receiver, args -> ")
+                            argumentDispatch(function.parameters) { count ->
+                                add(
+                                    "(receiver as %T).%N(%L)",
+                                    ownerType(),
+                                    function.name,
+                                    callArguments(function.parameters, count),
+                                )
+                            }
+                            add(" },\n")
                         }
-                        add(" },\n")
                     }
                     function.invokable -> {
-                        add("invoker = { receiver, args -> ")
-                        argumentDispatch(function.parameters) { count ->
-                            add("(receiver as %T).%N(%L)", ownerType(), function.name, callArguments(function.parameters, count))
+                        if (vararg) {
+                            add(
+                                "invoker = { receiver, args -> %N(receiver as %T, %L) },\n",
+                                functionBridgeName(requireNotNull(owner), index),
+                                ownerType(),
+                                castArguments(function.parameters),
+                            )
+                        } else {
+                            add("invoker = { receiver, args -> ")
+                            argumentDispatch(function.parameters) { count ->
+                                add(
+                                    "(receiver as %T).%N(%L)",
+                                    ownerType(),
+                                    function.name,
+                                    callArguments(function.parameters, count),
+                                )
+                            }
+                            add(" },\n")
                         }
-                        add(" },\n")
                     }
                 }
                 unindent()

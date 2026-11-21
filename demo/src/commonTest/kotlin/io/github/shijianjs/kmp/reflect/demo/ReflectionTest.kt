@@ -223,9 +223,11 @@ class ReflectionTest {
         // so such members are dropped instead of described.
         assertNull(scoped.function("hidden", 0))
         assertNull(scoped.function("secret", 0))
-        // The protected secondary constructor is gone, the public primary one stays.
-        assertEquals(1, scoped.constructors.size)
+        // The protected secondary constructor is gone; the public primary and the public `vararg`
+        // constructor stay.
+        assertEquals(2, scoped.constructors.size)
         assertEquals("x", (scoped.constructor(1)?.new("x") as Scoped).label)
+        assertEquals("x#2", (scoped.constructor(2)?.new("x", arrayOf("a", "b")) as Scoped).label)
         // A public property with a protected setter is readable but not writable.
         val counter = assertNotNull(scoped.property("counter"))
         assertTrue(counter.isReadable)
@@ -246,7 +248,7 @@ class ReflectionTest {
     fun `vararg parameters take one array argument`() {
         val join = assertNotNull(KmpClasses.of(Scoped::class).function("join", 1))
         assertTrue(join.parameters.single().isVararg)
-        assertEquals("a-b", join.invoke(Scoped("x"), arrayOf("a", "b")))
+        assertEquals("a-b", join.invoke(Scoped("x"), listOf(arrayOf("a", "b"))))
     }
 
     @Test
