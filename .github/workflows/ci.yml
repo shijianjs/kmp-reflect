@@ -56,6 +56,14 @@ jobs:
           path: ~/.konan
           key: konan-${{ matrix.os }}-2.4.21
 
+      # A Dependabot PR carries neither npm lock file, and `build` validates the committed ones
+      # before compiling, so each host refreshes both stores itself — the JS one and the Wasm one,
+      # since a Maven artifact reaches both through the npm packages it is converted to.
+      - name: Refresh npm lock files
+        if: github.actor == 'dependabot[bot]'
+        run: ./gradlew kotlinUpgradePackageLock kotlinWasmUpgradePackageLock
+        shell: bash
+
       - name: Build and test the host's targets
         run: ./gradlew build -x :demo:jsBrowserTest --stacktrace
         shell: bash
@@ -89,9 +97,9 @@ jobs:
       - name: Install browser test dependencies
         run: npx --yes playwright install-deps chromium
 
-      - name: Refresh npm lock file
+      - name: Refresh npm lock files
         if: github.actor == 'dependabot[bot]'
-        run: ./gradlew kotlinUpgradePackageLock
+        run: ./gradlew kotlinUpgradePackageLock kotlinWasmUpgradePackageLock
 
       - name: Test the demo page in a browser
         run: ./gradlew :demo:jsBrowserTest :demo:e2eTest --stacktrace
@@ -101,12 +109,16 @@ jobs:
       - name: Assemble Pages site
         run: ./gradlew pagesSite
 
-      - name: Upload refreshed npm lock file
+      # Both stores travel in one artifact: it is extracted into `kotlin-js-store` again, where
+      # `package-lock.json` and `wasm/package-lock.json` are the paths the checkout tracks.
+      - name: Upload refreshed npm lock files
         if: github.actor == 'dependabot[bot]'
         uses: actions/upload-artifact@v7
         with:
           name: npm-lock
-          path: kotlin-js-store/package-lock.json
+          path: |
+            kotlin-js-store/package-lock.json
+            kotlin-js-store/wasm/package-lock.json
 
       - name: Upload test reports
         if: failure()
