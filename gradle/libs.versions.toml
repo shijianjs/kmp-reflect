@@ -2,10 +2,11 @@
 # generated `libs` accessor (`libs.kotlin.browser`, `libs.plugins.detekt`, `libs.versions.kotlin`),
 # so a version is written down exactly once.
 #
-# Two neighbouring files deliberately stay outside this catalog, because they are not "a version of
-# something this build declares": `package.json` (the upstream npm package this repository wraps;
-# Dependabot reads it and the wrapper derives its own version from it) and
-# `wrapper-revisions.properties` (the per-module `-kt.N` revision).
+# Three neighbouring files deliberately stay outside this catalog, because they are not "a version
+# of something this build declares": `package.json` (the upstream npm package this repository wraps;
+# Dependabot reads it and the wrapper derives its own version from it),
+# `wrapper-revisions.properties` (the per-module `-kt.N` revision) and `gradle.properties`, which
+# keeps this project's own publication version next to the Gradle/Kotlin user settings.
 
 [versions]
 # Kotlin toolchain and the Gradle plugins that build this repository.
