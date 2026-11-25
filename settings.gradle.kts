@@ -13,15 +13,9 @@ pluginManagement {
     // would. An included build also means the plugin is compiled before any project that uses it.
     includeBuild("gradle/kmp-reflect-gradle-plugin")
 
-    // The plugin's version lives in gradle.properties next to the wrapper's: both come from
-    // ktjs-docusaurus, but each of its modules carries its own `-kt.N` revision.
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.id == "io.github.shijianjs.ktjs.docusaurus") {
-                useVersion(providers.gradleProperty("ktjs-docusaurus-gradle-plugin.version").get())
-            }
-        }
-    }
+    // The plugin's version is a catalog entry (`libs.plugins.ktjs.docusaurus` in
+    // `gradle/libs.versions.toml`); `docs` applies it with `alias(...)`, so no resolution strategy
+    // is needed here.
 }
 
 dependencyResolutionManagement {

@@ -25,9 +25,9 @@ java {
 }
 
 dependencies {
-    implementation("com.google.devtools.ksp:symbol-processing-api:2.3.14")
-    implementation("com.squareup:kotlinpoet:2.4.0")
-    implementation("com.squareup:kotlinpoet-ksp:2.4.0")
+    implementation(libs.symbol.processing.api)
+    implementation(libs.kotlinpoet)
+    implementation(libs.kotlinpoet.ksp)
 
     testImplementation(kotlin("test"))
 }

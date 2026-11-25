@@ -94,17 +94,15 @@ kotlin {
             dependencies {
                 // The demo shell: navbar, drawer, router, language and theme menus, page container. It
                 // exposes dom-kit as an `api` dependency, which is what the sections style with.
-                implementation(
-                    "io.github.shijianjs:ktjs-demo-kit-js:${providers.gradleProperty("ktjs-demo-kit.version").get()}",
-                )
+                implementation(libs.ktjs.demo.kit.js)
             }
         }
         jvmTest.dependencies {
-            implementation("com.microsoft.playwright:playwright:1.61.0")
-            implementation("cn.hutool:hutool-all:5.8.48")
-            implementation("org.junit.jupiter:junit-jupiter:6.1.3")
+            implementation(libs.playwright)
+            implementation(libs.hutool.all)
+            implementation(libs.junit.jupiter)
             implementation(kotlin("test-junit5"))
-            runtimeOnly("org.junit.platform:junit-platform-launcher:6.1.3")
+            runtimeOnly(libs.junit.platform.launcher)
         }
     }
 }
