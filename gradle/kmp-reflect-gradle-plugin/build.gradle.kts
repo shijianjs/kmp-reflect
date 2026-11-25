@@ -1,6 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    // An included build: the root's version catalog does not reach it, and `plugins {}` needs the
+    // version here anyway, so the Kotlin and KSP numbers below are this build's own copy.
     kotlin("jvm") version "2.4.21"
     `java-gradle-plugin`
 }
@@ -64,7 +66,8 @@ kotlin.sourceSets.named("main") { kotlin.srcDir(generateVersion) }
 
 dependencies {
     // Type-safe access to `ksp { arg(...) }`. Compile-only: the KSP plugin is on the consumer's
-    // buildscript classpath by definition, and this module must not drag a compiler in.
+    // buildscript classpath by definition, and this module must not drag a compiler in. Same KSP
+    // release as the plugin above (this build has no catalog to share it through).
     compileOnly("com.google.devtools.ksp:symbol-processing-gradle-plugin:2.3.14")
 }
 
